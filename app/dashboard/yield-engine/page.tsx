@@ -25,7 +25,7 @@ export default function YieldEnginePage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-white/10 text-white/30">
+    <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-white text-purple-300">
       Yield Engine — coming soon
     </div>
   )

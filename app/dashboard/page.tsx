@@ -18,7 +18,7 @@ export default function DashboardPage() {
   if (!wallet.isConnected) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-zinc-400">Please connect your wallet to access the dashboard.</p>
+        <p className="text-slate-500">Please connect your wallet to access the dashboard.</p>
         <ConnectWalletButton />
       </div>
     )
@@ -26,23 +26,23 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {['Total Balance', 'Active Vaults', 'Yield Earned', 'Transactions'].map(
           (title, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm"
+              className="rounded-2xl border border-purple-200 bg-purple-50 p-5"
             >
-              <p className="text-sm text-white/50">{title}</p>
-              <p className="mt-2 text-2xl font-semibold text-white">—</p>
+              <p className="text-sm text-purple-400">{title}</p>
+              <p className="mt-2 text-2xl font-semibold text-purple-900">—</p>
             </div>
           ),
         )}
       </div>
 
-      <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-white/10 text-white/30">
+      <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-white text-purple-300">
         Main content area — coming soon
       </div>
     </div>
