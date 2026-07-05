@@ -6,7 +6,7 @@ import { useWallet } from '@/hooks/useWallet'
 import ConnectWalletButton from '@/components/ConnectWalletButton'
 
 export default function DashboardPage() {
-  const { wallet, disconnect } = useWallet()
+  const { wallet } = useWallet()
   const router = useRouter()
 
   useEffect(() => {
@@ -15,34 +15,36 @@ export default function DashboardPage() {
     }
   }, [wallet.isConnected, wallet.isConnecting, router])
 
-  const handleLogout = () => {
-    disconnect()
-    router.push('/')
-  }
-
   if (!wallet.isConnected) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-zinc-600">Please connect your wallet to access the dashboard.</p>
+        <p className="text-zinc-400">Please connect your wallet to access the dashboard.</p>
         <ConnectWalletButton />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
-      <h1 className="text-4xl font-bold text-blue-800">Welcome to Lumina Dashboard</h1>
-      <p className="text-zinc-600">
-        Connected as{' '}
-        <span className="font-mono text-sm text-zinc-800">{wallet.publicKey}</span>
-      </p>
-      <button
-        type="button"
-        onClick={handleLogout}
-        className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-red-500"
-      >
-        Logout
-      </button>
+    <div className="flex flex-1 flex-col gap-6">
+      <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {['Total Balance', 'Active Vaults', 'Yield Earned', 'Transactions'].map(
+          (title, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm"
+            >
+              <p className="text-sm text-white/50">{title}</p>
+              <p className="mt-2 text-2xl font-semibold text-white">—</p>
+            </div>
+          ),
+        )}
+      </div>
+
+      <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-white/10 text-white/30">
+        Main content area — coming soon
+      </div>
     </div>
   )
 }
