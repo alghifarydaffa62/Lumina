@@ -14,8 +14,8 @@ import {
 
 const menuItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'My Card', href: '/dashboard/my-card', icon: CreditCard },
   { label: 'Vault', href: '/dashboard/vault', icon: Vault },
+  { label: 'My Card', href: '/dashboard/my-card', icon: CreditCard },
   { label: 'Yield Engine', href: '/dashboard/yield-engine', icon: Zap },
   { label: 'Transactions', href: '/dashboard/transactions', icon: ArrowUpDown },
 ]
