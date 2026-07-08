@@ -1,27 +1,42 @@
+'use client'
 
-import ConnectWalletButton from "./ConnectWalletButton";
+import { useEffect, useRef } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { ConnectButton, useWallet } from 'stellar-wallet-kit'
 
 export default function Navbar() {
-    return(
-        <nav className="flex justify-around items-center">
-            <h1 className="text-2xl font-semibold text-blue-800">Lumina</h1>
+  const { isConnected } = useWallet()
+  const router = useRouter()
+  const pathname = usePathname()
+  const wasDisconnected = useRef(true)
 
-            <ul className="flex gap-10 items-center">
-                <li>
-                    <a href="">Home</a>
-                </li>
-                <li>
-                    <a href="">About Lumina</a>
-                </li>
-                <li>
-                    <a href="">features</a>
-                </li>
-                <li>
-                    <a href="">Use Case</a>
-                </li>
-            </ul>
+  useEffect(() => {
+    if (isConnected && wasDisconnected.current && pathname === '/') {
+      router.push('/dashboard')
+    }
+    wasDisconnected.current = !isConnected
+  }, [isConnected, pathname, router])
 
-            <ConnectWalletButton />
-        </nav>
-    )
+  return (
+    <nav className="flex justify-around items-center">
+      <h1 className="text-2xl font-semibold text-blue-800">Lumina</h1>
+
+      <ul className="flex gap-10 items-center">
+        <li>
+          <a href="">Home</a>
+        </li>
+        <li>
+          <a href="">About Lumina</a>
+        </li>
+        <li>
+          <a href="">features</a>
+        </li>
+        <li>
+          <a href="">Use Case</a>
+        </li>
+      </ul>
+
+      <ConnectButton />
+    </nav>
+  )
 }

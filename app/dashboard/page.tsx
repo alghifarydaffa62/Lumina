@@ -2,47 +2,50 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useWallet } from '@/hooks/useWallet'
-import ConnectWalletButton from '@/components/ConnectWalletButton'
+import { useWallet } from 'stellar-wallet-kit'
 
 export default function DashboardPage() {
-  const { wallet, disconnect } = useWallet()
+  const { isConnected, isConnecting } = useWallet()
   const router = useRouter()
 
   useEffect(() => {
-    if (!wallet.isConnected && !wallet.isConnecting) {
+    if (!isConnected && !isConnecting) {
       router.push('/')
     }
-  }, [wallet.isConnected, wallet.isConnecting, router])
+  }, [isConnected, isConnecting, router])
 
-  const handleLogout = () => {
-    disconnect()
-    router.push('/')
-  }
-
-  if (!wallet.isConnected) {
+  if (!isConnected) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-zinc-600">Please connect your wallet to access the dashboard.</p>
-        <ConnectWalletButton />
+        <p className="text-slate-500">Please connect your wallet to access the dashboard.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
-      <h1 className="text-4xl font-bold text-blue-800">Welcome to Lumina Dashboard</h1>
-      <p className="text-zinc-600">
-        Connected as{' '}
-        <span className="font-mono text-sm text-zinc-800">{wallet.publicKey}</span>
-      </p>
-      <button
-        type="button"
-        onClick={handleLogout}
-        className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-red-500"
-      >
-        Logout
-      </button>
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+        
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {['Total Balance', 'Active Vaults', 'Yield Earned', 'Transactions'].map(
+          (title, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-purple-200 bg-purple-50 p-5"
+            >
+              <p className="text-sm text-purple-400">{title}</p>
+              <p className="mt-2 text-2xl font-semibold text-purple-900">—</p>
+            </div>
+          ),
+        )}
+      </div>
+
+      <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-white text-purple-300">
+        Main content area — coming soon
+      </div>
     </div>
   )
 }
