@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useWallet } from '@/hooks/useWallet'
+import { useWallet } from 'stellar-wallet-kit'
 import {
   LayoutDashboard,
   CreditCard,

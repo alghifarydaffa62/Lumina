@@ -2,24 +2,22 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useWallet } from '@/hooks/useWallet'
-import ConnectWalletButton from '@/components/ConnectWalletButton'
+import { useWallet } from 'stellar-wallet-kit'
 
 export default function YieldEnginePage() {
-  const { wallet } = useWallet()
+  const { isConnected, isConnecting } = useWallet()
   const router = useRouter()
 
   useEffect(() => {
-    if (!wallet.isConnected && !wallet.isConnecting) {
+    if (!isConnected && !isConnecting) {
       router.push('/')
     }
-  }, [wallet.isConnected, wallet.isConnecting, router])
+  }, [isConnected, isConnecting, router])
 
-  if (!wallet.isConnected) {
+  if (!isConnected) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-zinc-400">Please connect your wallet.</p>
-        <ConnectWalletButton />
+        <p className="text-slate-500">Please connect your wallet.</p>
       </div>
     )
   }

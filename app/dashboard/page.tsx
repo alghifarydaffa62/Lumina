@@ -2,31 +2,32 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useWallet } from '@/hooks/useWallet'
-import ConnectWalletButton from '@/components/ConnectWalletButton'
+import { useWallet } from 'stellar-wallet-kit'
 
 export default function DashboardPage() {
-  const { wallet } = useWallet()
+  const { isConnected, isConnecting } = useWallet()
   const router = useRouter()
 
   useEffect(() => {
-    if (!wallet.isConnected && !wallet.isConnecting) {
+    if (!isConnected && !isConnecting) {
       router.push('/')
     }
-  }, [wallet.isConnected, wallet.isConnecting, router])
+  }, [isConnected, isConnecting, router])
 
-  if (!wallet.isConnected) {
+  if (!isConnected) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <p className="text-slate-500">Please connect your wallet to access the dashboard.</p>
-        <ConnectWalletButton />
       </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+        
+      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {['Total Balance', 'Active Vaults', 'Yield Earned', 'Transactions'].map(
