@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useWallet } from 'stellar-wallet-kit'
@@ -9,8 +10,10 @@ import {
   Vault,
   Zap,
   ArrowUpDown,
+  QrCode,
   LogOut,
 } from 'lucide-react'
+import QRCodeModal from '@/components/QRCodeModal'
 
 const menuItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -22,8 +25,9 @@ const menuItems = [
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
-  const { disconnect } = useWallet()
+  const { account, disconnect } = useWallet()
   const router = useRouter()
+  const [showQR, setShowQR] = useState(false)
 
   const handleLogout = () => {
     disconnect()
@@ -58,6 +62,20 @@ export default function DashboardSidebar() {
             </Link>
           )
         })}
+
+        {account?.address && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowQR(true)}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
+            >
+              <QrCode size={18} />
+              QR Address
+            </button>
+            <QRCodeModal value={account.address} open={showQR} onClose={() => setShowQR(false)} />
+          </>
+        )}
       </nav>
 
       <button
