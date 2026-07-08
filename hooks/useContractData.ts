@@ -6,7 +6,7 @@ import { getCollateral, getDebt } from '@/lib/contract'
 
 const LTV_LIMIT = 70
 
-interface ContractData {
+export interface ContractData {
   collateral: bigint
   debt: bigint
   loading: boolean
@@ -19,38 +19,47 @@ interface ContractData {
 }
 
 export function useContractData(): ContractData {
-  const { account, isConnected } = useWallet()
+  const { account } = useWallet()
   const [collateral, setCollateral] = useState<bigint>(BigInt(0))
   const [debt, setDebt] = useState<bigint>(BigInt(0))
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [fetchKey, setFetchKey] = useState(0)
 
-  const fetchData = useCallback(async () => {
-    if (!isConnected || !account?.address) return
+  useEffect(() => {
+    if (!account) return
+    let cancelled = false
 
+    const load = async () => {
+      try {
+        const [coll, d] = await Promise.all([
+          getCollateral(account.address),
+          getDebt(account.address),
+        ])
+        if (!cancelled) {
+          setCollateral(coll)
+          setDebt(d)
+          setError(null)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err)
+          setError(err instanceof Error ? err.message : 'Failed to fetch contract data')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [account, fetchKey])
+
+  const refresh = useCallback(() => {
     setLoading(true)
     setError(null)
-
-    try {
-      const [coll, d] = await Promise.all([
-        getCollateral(account.address),
-        getDebt(account.address),
-      ])
-
-      setCollateral(coll)
-      setDebt(d)
-    } catch (err) {
-      console.error(err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch contract data')
-    } finally {
-      setLoading(false)
-    }
-  }, [isConnected, account?.address])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData, fetchKey])
+    setFetchKey((k) => k + 1)
+  }, [])
 
   const collateralNum = Number(collateral)
   const debtNum = Number(debt)
@@ -67,6 +76,6 @@ export function useContractData(): ContractData {
     availableCredit,
     ltvHealthRatio,
     ltvLimit: LTV_LIMIT,
-    refresh: () => setFetchKey((k) => k + 1),
+    refresh,
   }
 }
