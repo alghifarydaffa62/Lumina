@@ -31,7 +31,7 @@ export default function DashboardSidebar() {
   }
 
   return (
-    <aside className="flex w-64 flex-col rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-5">
+    <aside className="flex w-64 flex-col rounded-3xl border border-white/10 bg-linear-to-br from-slate-950 via-purple-950 to-slate-950 p-5">
       <div className="mb-8 flex items-center gap-2 px-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600 text-sm font-bold text-white">
           L
