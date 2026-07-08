@@ -34,6 +34,9 @@ export default function Navbar() {
         <li>
           <a href="">Use Case</a>
         </li>
+        <li>
+          <a href="/merchant" target="_blank" rel="noopener noreferrer">Lumina Merchant</a>
+        </li>
       </ul>
 
       <ConnectButton />
