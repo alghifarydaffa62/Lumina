@@ -114,6 +114,17 @@ export async function deposit(
   ], signTransaction)
 }
 
+export async function spend(
+  user: string,
+  amount: bigint,
+  signTransaction: Signer,
+): Promise<string> {
+  return buildAndSend(user, 'spend', [
+    nativeToScVal(user, { type: 'address' }),
+    nativeToScVal(amount, { type: 'i128' }),
+  ], signTransaction)
+}
+
 export async function withdraw(
   user: string,
   amount: bigint,
