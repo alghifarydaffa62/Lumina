@@ -14,7 +14,7 @@ export default function VaultWithdrawForm({ onWithdraw, maxCollateral, loading, 
   const [amount, setAmount] = useState('')
 
   const num = Number(amount)
-  const maxNum = Number(maxCollateral)
+  const maxNum = Number(maxCollateral) / 1e7
   const valid = amount.length > 0 && num > 0 && num <= maxNum
   const exceeds = amount.length > 0 && num > maxNum
 
