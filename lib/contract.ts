@@ -1,7 +1,7 @@
 import { Contract, nativeToScVal, scValToNative, Account, TransactionBuilder, xdr } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
 
-const CONTRACT_ID = 'CADJC5Y7UVWIQ72ENKWF3N7ZIKIEU3I75G6SABPGZZUEWURBRRH6ZQST'
+const CONTRACT_ID = 'CD2BRE5VRAQSXWZ6NSKPUKKS7RBZC2VMWDKOQQBRFZEWZDGWQYFJPB7M'
 const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 
