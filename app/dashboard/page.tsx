@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import { useContractData } from '@/hooks/useContractData'
 import { formatUSD } from '@/lib/format'
 import LtvGauge from '@/components/LtvGauge'
@@ -21,25 +21,23 @@ export default function DashboardPage() {
 
   if (!isConnected) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-slate-500">Please connect your wallet to access the dashboard.</p>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-slate-400 text-sm">Connect your wallet to continue</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={refresh}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
-          >
-            Refresh
-          </button>
-        </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-slate-800 md:text-2xl">Dashboard</h1>
+        <button
+          type="button"
+          onClick={refresh}
+          className="self-start rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50 sm:self-auto"
+        >
+          Refresh
+        </button>
       </div>
 
       {error && (
@@ -73,8 +71,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 items-start gap-6">
-        <div className="flex flex-col items-center rounded-2xl border border-purple-200 bg-white p-6">
+      <div className="flex flex-1 flex-col items-start gap-6 md:flex-row">
+        <div className="flex w-full flex-col items-center rounded-2xl border border-purple-200 bg-white p-6 md:w-auto">
           <LtvGauge ratio={ltvHealthRatio} />
         </div>
 

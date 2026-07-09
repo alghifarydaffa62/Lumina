@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, startTransition } from 'react'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import { useRouter } from 'next/navigation'
 import { useMerchantStore } from '@/hooks/useMerchant'
 import MerchantNavbar from '@/components/merchant/MerchantNavbar'

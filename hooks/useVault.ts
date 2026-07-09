@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import { useRouter } from 'next/navigation'
 import { getCollateral, getDebt, deposit, withdraw } from '@/lib/contract'
 import { toStroops } from '@/lib/amount'

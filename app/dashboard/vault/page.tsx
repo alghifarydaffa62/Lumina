@@ -19,20 +19,20 @@ export default function VaultPage() {
   if (!isConnected) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-slate-500">Please connect your wallet.</p>
+        <p className="text-sm text-slate-400">Connect your wallet to continue</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Vault</h1>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-slate-800 md:text-2xl">Vault</h1>
         <button
           type="button"
           onClick={refresh}
           disabled={loading}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+          className="self-start rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 sm:self-auto"
         >
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
@@ -45,7 +45,7 @@ export default function VaultPage() {
         loading={loading}
       />
 
-      <div className="flex flex-1 items-start gap-6">
+      <div className="flex flex-1 flex-col items-start gap-6 md:flex-row">
         <VaultLtvPanel
           collateral={collateral}
           debt={debt}
@@ -53,7 +53,7 @@ export default function VaultPage() {
           loading={loading}
         />
 
-        <div className="flex flex-1 gap-6">
+        <div className="flex flex-1 flex-col gap-4 md:flex-row md:gap-6">
           <VaultDepositForm onDeposit={handleDeposit} disabled={isPending} />
           <VaultWithdrawForm
             onWithdraw={handleWithdraw}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, startTransition } from 'react'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import { useRouter } from 'next/navigation'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
