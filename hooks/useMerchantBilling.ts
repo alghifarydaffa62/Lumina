@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
 
@@ -28,6 +28,7 @@ export function useMerchantBilling() {
         amountUSDC: params.amountUSDC,
         status: 'pending',
         createdAt: serverTimestamp(),
+        expiresAt: Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000)),
       })
       toast.success(`Invoice sent to ${params.buyerAddress.slice(0, 8)}...`)
       return true

@@ -1,14 +1,15 @@
 'use client'
 
-import { useCardAuth, useCardBalances, useCardActions } from '@/hooks/useCard'
+import { useCardAuth, useCardBalances } from '@/hooks/useCard'
+import { useInvoices, usePayInvoice } from '@/hooks/useInvoices'
 import CardBalances from '@/components/my-card/CardBalances'
-import CardSpendForm from '@/components/my-card/CardSpendForm'
-import CardHistory from '@/components/my-card/CardHistory'
+import InvoiceBillList from '@/components/my-card/InvoiceBillList'
 
 export default function MyCardPage() {
   const { isConnected } = useCardAuth()
   const { collateral, debt, availableCredit, loading, refresh } = useCardBalances()
-  const { isPending, handleSpend } = useCardActions(refresh)
+  const { invoices, loading: invLoading, error: invError, indexUrl } = useInvoices()
+  const { payingId, pay } = usePayInvoice()
 
   if (!isConnected) {
     return (
@@ -40,14 +41,16 @@ export default function MyCardPage() {
       />
 
       <div className="flex flex-1 gap-6">
-        <div className="w-full max-w-md">
-          <CardSpendForm
-            onSpend={handleSpend}
-            availableCredit={availableCredit}
-            disabled={isPending}
+        <div className="flex-1">
+          <InvoiceBillList
+            invoices={invoices}
+            loading={invLoading}
+            error={invError}
+            indexUrl={indexUrl}
+            payingId={payingId}
+            onPay={pay}
           />
         </div>
-        <CardHistory />
       </div>
     </div>
   )

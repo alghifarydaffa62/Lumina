@@ -3,7 +3,6 @@ import {
   Contract,
   nativeToScVal,
   Keypair,
-  Account,
   TransactionBuilder,
 } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
@@ -13,7 +12,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 const CONTRACT_ID = process.env.CONTRACT_ID || ''
 const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
-const YIELD_AMOUNT = BigInt('20000000') // 2 USDC in stroops (7 decimals)
+const YIELD_AMOUNT = BigInt('20000000')
 
 function getAdminFirestore() {
   if (!getApps().length) {
@@ -74,15 +73,39 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'ADMIN_SECRET_KEY not configured' }, { status: 500 })
   }
 
+  const db = getAdminFirestore()
+  const summary: Record<string, unknown> = {}
+
   try {
-    const db = getAdminFirestore()
-    const snapshot = await db
+    // --- Part 1: Expire overdue invoices ---
+    const expiredSnapshot = await db
+      .collection('invoices')
+      .where('status', '==', 'pending')
+      .where('expiresAt', '<', new Date())
+      .get()
+
+    let expiredCount = 0
+    const batch = db.batch()
+    expiredSnapshot.forEach((doc) => {
+      batch.update(doc.ref, { status: 'expired' })
+      expiredCount++
+    })
+    if (expiredCount > 0) await batch.commit()
+
+    summary.expiredInvoices = expiredCount
+  } catch (err) {
+    summary.expireError = err instanceof Error ? err.message : 'Unknown error'
+  }
+
+  try {
+    // --- Part 2: Offset debt for users with paid invoices ---
+    const paidSnapshot = await db
       .collection('invoices')
       .where('status', '==', 'paid')
       .get()
 
     const addressSet = new Set<string>()
-    snapshot.forEach((doc) => {
+    paidSnapshot.forEach((doc) => {
       const data = doc.data()
       if (data.buyerAddress) addressSet.add(data.buyerAddress)
     })
@@ -90,11 +113,9 @@ export async function GET(request: Request) {
     const addresses = [...addressSet]
 
     if (!addresses.length) {
-      return NextResponse.json({
-        status: 'idle',
-        message: 'No active debts to process.',
-        addresses: 0,
-      })
+      summary.offsetStatus = 'idle'
+      summary.offsetAddresses = 0
+      return NextResponse.json(summary)
     }
 
     const results: { address: string; success: boolean; error?: string }[] = []
@@ -109,18 +130,13 @@ export async function GET(request: Request) {
       }
     }
 
-    const succeeded = results.filter((r) => r.success).length
-    const failed = results.filter((r) => !r.success).length
-
-    return NextResponse.json({
-      status: 'completed',
-      addresses: addresses.length,
-      succeeded,
-      failed,
-      results,
-    })
+    summary.offsetStatus = 'completed'
+    summary.offsetAddresses = addresses.length
+    summary.offsetSucceeded = results.filter((r) => r.success).length
+    summary.offsetFailed = results.filter((r) => !r.success).length
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    return NextResponse.json({ status: 'error', error: msg }, { status: 500 })
+    summary.offsetError = err instanceof Error ? err.message : 'Unknown error'
   }
+
+  return NextResponse.json(summary)
 }
