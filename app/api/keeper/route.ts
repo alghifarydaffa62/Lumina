@@ -6,26 +6,13 @@ import {
   TransactionBuilder,
 } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
-import { getFirestore } from 'firebase-admin/firestore'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
+import { collection, query, where, getDocs, writeBatch, doc, Timestamp } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 const CONTRACT_ID = process.env.CONTRACT_ID || ''
 const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 const YIELD_AMOUNT = BigInt('20000000')
-
-function getAdminFirestore() {
-  if (!getApps().length) {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-      }),
-    })
-  }
-  return getFirestore()
-}
 
 async function offsetDebtForUser(userAddress: string): Promise<void> {
   const server = new Server(RPC_URL)
@@ -73,24 +60,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'ADMIN_SECRET_KEY not configured' }, { status: 500 })
   }
 
-  const db = getAdminFirestore()
   const summary: Record<string, unknown> = {}
 
   try {
-    // --- Part 1: Expire overdue invoices ---
-    const expiredSnapshot = await db
-      .collection('invoices')
-      .where('status', '==', 'pending')
-      .where('expiresAt', '<', new Date())
-      .get()
+    const expiredSnapshot = await getDocs(
+      query(
+        collection(db, 'invoices'),
+        where('status', '==', 'pending'),
+        where('expiresAt', '<', Timestamp.now()),
+      ),
+    )
 
     let expiredCount = 0
-    const batch = db.batch()
-    expiredSnapshot.forEach((doc) => {
-      batch.update(doc.ref, { status: 'expired' })
-      expiredCount++
-    })
-    if (expiredCount > 0) await batch.commit()
+    if (expiredSnapshot.size > 0) {
+      const batch = writeBatch(db)
+      expiredSnapshot.forEach((d) => {
+        batch.update(doc(db, 'invoices', d.id), { status: 'expired' })
+        expiredCount++
+      })
+      await batch.commit()
+    }
 
     summary.expiredInvoices = expiredCount
   } catch (err) {
@@ -98,11 +87,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    // --- Part 2: Offset debt for users with paid invoices ---
-    const paidSnapshot = await db
-      .collection('invoices')
-      .where('status', '==', 'paid')
-      .get()
+    const paidSnapshot = await getDocs(
+      query(collection(db, 'invoices'), where('status', '==', 'paid')),
+    )
 
     const addressSet = new Set<string>()
     paidSnapshot.forEach((doc) => {
