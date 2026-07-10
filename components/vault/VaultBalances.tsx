@@ -19,9 +19,9 @@ export default function VaultBalances({ collateral, debt, ltvRatio, loading }: P
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {cards.map((c) => (
-        <div key={c.label} className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
-          <p className="text-sm text-purple-400">{c.label}</p>
-          <p className="mt-2 text-2xl font-semibold text-purple-900">
+        <div key={c.label} className="border border-hairline bg-obsidian-panel p-5">
+          <p className="font-mono text-[11px] tracking-widest2 uppercase text-titanium">{c.label}</p>
+          <p className="mt-2 text-2xl font-semibold text-bone">
             {loading ? '...' : c.value}
           </p>
         </div>

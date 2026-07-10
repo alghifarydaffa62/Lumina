@@ -35,7 +35,7 @@ export function Cover() {
               unit="word"
               className="font-display text-[13vw] md:text-[7.4vw] leading-[0.86] tracking-tightest uppercase text-bone"
             >
-              Debt that pays itself.
+              The decentralized credit card.
             </KineticText>
           </div>
         </div>

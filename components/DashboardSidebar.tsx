@@ -46,10 +46,10 @@ export default function DashboardSidebar() {
             key={item.href}
             href={item.href}
             onClick={close}
-            className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+            className={`flex items-center gap-3 px-4 py-2.5 font-mono text-[11px] tracking-widest2 uppercase transition duration-300 ${
               isActive
-                ? 'bg-white/15 text-white'
-                : 'text-white/60 hover:bg-white/10 hover:text-white'
+                ? 'bg-brass/10 text-brass'
+                : 'text-titanium hover:bg-bone/5 hover:text-bone'
             }`}
           >
             <Icon size={18} />
@@ -62,19 +62,19 @@ export default function DashboardSidebar() {
         <button
           type="button"
           onClick={() => { setShowQR(true); close() }}
-          className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 px-4 py-2.5 font-mono text-[11px] tracking-widest2 uppercase text-titanium transition duration-300 hover:bg-bone/5 hover:text-bone"
         >
           <QrCode size={18} />
           QR Address
         </button>
       )}
 
-      <hr className="border-white/10" />
+      <hr className="border-hairline" />
 
       <button
         type="button"
         onClick={handleLogout}
-        className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-red-300 transition hover:bg-white/10 hover:text-red-200"
+        className="flex items-center gap-3 px-4 py-2.5 font-mono text-[11px] tracking-widest2 uppercase text-brass-dim transition duration-300 hover:bg-brass/5 hover:text-brass"
       >
         <LogOut size={18} />
         Logout
@@ -88,43 +88,37 @@ export default function DashboardSidebar() {
 
       {/* Mobile: fixed top bar + dropdown */}
       <div className="md:hidden">
-        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between rounded-b-2xl border-b border-white/10 bg-linear-to-r from-slate-950 via-purple-950 to-slate-950 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600 text-sm font-bold text-white">
-              L
-            </div>
-            <span className="text-lg font-semibold text-white">Lumina</span>
-          </div>
+        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-hairline bg-obsidian/80 backdrop-blur-md px-4 py-3">
+          <span className="font-display text-lg tracking-tightest text-bone uppercase">
+            Lumina<span className="text-brass">.</span>
+          </span>
           <button
             type="button"
             onClick={() => setOpen((p) => !p)}
-            className="rounded-xl bg-white/10 p-2 text-white transition hover:bg-white/20"
+            className="border border-hairline2 p-2 text-titanium transition duration-300 hover:bg-bone/5 hover:text-bone"
           >
-            <Menu size={20} />
+            <Menu size={18} />
           </button>
         </div>
 
         {open && (
-          <div className="fixed inset-x-0 top-[60px] z-50 mx-2 rounded-2xl border border-white/10 bg-linear-to-b from-slate-950 via-purple-950 to-slate-950 p-3 shadow-2xl">
+          <div className="fixed inset-x-0 top-[56px] z-50 mx-2 border border-hairline bg-obsidian-raised/95 backdrop-blur-md p-3">
             <nav className="flex flex-col gap-1">{menu}</nav>
           </div>
         )}
 
         {open && (
-          <div className="fixed inset-0 z-40 bg-black/20" onClick={close} />
+          <div className="fixed inset-0 z-40 bg-obsidian/60" onClick={close} />
         )}
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 flex-col rounded-3xl border border-white/10 bg-linear-to-br from-slate-950 via-purple-950 to-slate-950 p-5 md:flex">
-        <div className="flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600 text-sm font-bold text-white">
-            L
-          </div>
-          <span className="text-lg font-semibold text-white">Lumina</span>
-        </div>
+      <aside className="hidden w-64 shrink-0 flex-col border border-hairline bg-obsidian-raised/80 backdrop-blur-md p-6 md:flex">
+        <span className="font-display text-lg tracking-tightest text-bone uppercase">
+          Lumina<span className="text-brass">.</span>
+        </span>
 
-        <nav className="mt-8 flex flex-1 flex-col gap-1">
+        <nav className="mt-10 flex flex-1 flex-col gap-1">
           {menuItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
@@ -132,13 +126,13 @@ export default function DashboardSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                className={`flex items-center gap-3 px-3 py-2.5 font-mono text-[11px] tracking-widest2 uppercase transition duration-300 ${
                   isActive
-                    ? 'bg-white/15 text-white'
-                    : 'text-white/60 hover:bg-white/10 hover:text-white'
+                    ? 'bg-brass/10 text-brass'
+                    : 'text-titanium hover:bg-bone/5 hover:text-bone'
                 }`}
               >
-                <Icon size={18} />
+                <Icon size={16} />
                 {item.label}
               </Link>
             )
@@ -148,9 +142,9 @@ export default function DashboardSidebar() {
             <button
               type="button"
               onClick={() => setShowQR(true)}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
+              className="flex items-center gap-3 px-3 py-2.5 font-mono text-[11px] tracking-widest2 uppercase text-titanium transition duration-300 hover:bg-bone/5 hover:text-bone"
             >
-              <QrCode size={18} />
+              <QrCode size={16} />
               QR Address
             </button>
           )}
@@ -159,9 +153,9 @@ export default function DashboardSidebar() {
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-4 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-300 transition hover:bg-white/10 hover:text-red-200"
+          className="mt-4 flex items-center gap-3 px-3 py-2.5 font-mono text-[11px] tracking-widest2 uppercase text-brass-dim transition duration-300 hover:bg-brass/5 hover:text-brass"
         >
-          <LogOut size={18} />
+          <LogOut size={16} />
           Logout
         </button>
       </aside>

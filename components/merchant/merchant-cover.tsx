@@ -34,7 +34,7 @@ export function MerchantCover() {
               unit="word"
               className="font-display text-[11.5vw] md:text-[6.6vw] leading-[0.86] tracking-tightest uppercase text-bone"
             >
-              Paid before you refresh the page.
+              Process credit cards. Settle on-chain.
             </KineticText>
           </div>
         </div>

@@ -22,7 +22,7 @@ export default function DashboardPage() {
   if (!isConnected) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-slate-400 text-sm">Connect your wallet to continue</p>
+        <p className="text-sm text-titanium">Connect your wallet to continue</p>
       </div>
     )
   }
@@ -30,78 +30,78 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold text-slate-800 md:text-2xl">Dashboard</h1>
+        <h1 className="font-display text-xl tracking-tightest text-bone uppercase md:text-2xl">Dashboard</h1>
         <button
           type="button"
           onClick={refresh}
-          className="self-start rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50 sm:self-auto"
+          className="self-start border border-hairline2 bg-transparent px-4 py-2 font-mono text-[11px] tracking-widest2 uppercase text-bone transition duration-300 hover:bg-bone hover:text-obsidian sm:self-auto"
         >
           Refresh
         </button>
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        <div className="border border-brass/30 bg-brass/5 p-4 text-sm text-brass">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
-          <p className="text-sm text-purple-400">Collateral</p>
-          <p className="mt-2 text-2xl font-semibold text-purple-900">
+        <div className="border border-hairline bg-obsidian-panel p-5">
+          <p className="font-mono text-[11px] tracking-widest2 uppercase text-titanium">Collateral</p>
+          <p className="mt-2 text-2xl font-semibold text-bone">
             {loading ? '...' : formatUSD(collateral)}
           </p>
         </div>
-        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
-          <p className="text-sm text-purple-400">Active Debt</p>
-          <p className="mt-2 text-2xl font-semibold text-purple-900">
+        <div className="border border-hairline bg-obsidian-panel p-5">
+          <p className="font-mono text-[11px] tracking-widest2 uppercase text-titanium">Active Debt</p>
+          <p className="mt-2 text-2xl font-semibold text-bone">
             {loading ? '...' : formatUSD(debt)}
           </p>
         </div>
-        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
-          <p className="text-sm text-purple-400">Available Credit</p>
-          <p className="mt-2 text-2xl font-semibold text-purple-900">
+        <div className="border border-hairline bg-obsidian-panel p-5">
+          <p className="font-mono text-[11px] tracking-widest2 uppercase text-titanium">Available Credit</p>
+          <p className="mt-2 text-2xl font-semibold text-brass">
             {loading ? '...' : formatUSD(availableCredit)}
           </p>
         </div>
-        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
-          <p className="text-sm text-purple-400">Max LTV</p>
-          <p className="mt-2 text-2xl font-semibold text-purple-900">{ltvLimit}%</p>
+        <div className="border border-hairline bg-obsidian-panel p-5">
+          <p className="font-mono text-[11px] tracking-widest2 uppercase text-titanium">Max LTV</p>
+          <p className="mt-2 text-2xl font-semibold text-bone">{ltvLimit}%</p>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col items-start gap-6 md:flex-row">
-        <div className="flex w-full flex-col items-center rounded-2xl border border-purple-200 bg-white p-6 md:w-auto">
+        <div className="flex w-full flex-col items-center border border-hairline bg-obsidian-panel p-6 md:w-auto">
           <LtvGauge ratio={ltvHealthRatio} />
         </div>
 
         <div className="flex flex-1 flex-col gap-4">
-          <div className="rounded-2xl border border-purple-200 bg-white p-5">
-            <h3 className="mb-2 text-sm font-medium text-slate-700">Credit Summary</h3>
+          <div className="border border-hairline bg-obsidian-panel p-5">
+            <h3 className="mb-2 font-mono text-[11px] tracking-widest2 uppercase text-bone-dim">Credit Summary</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Collateral Balance</span>
-                <span className="font-medium text-slate-800">
+                <span className="text-titanium">Collateral Balance</span>
+                <span className="font-medium text-bone">
                   {loading ? '...' : formatUSD(collateral)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Active Debt</span>
-                <span className="font-medium text-slate-800">
+                <span className="text-titanium">Active Debt</span>
+                <span className="font-medium text-bone">
                   {loading ? '...' : formatUSD(debt)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Max Allowed Debt ({ltvLimit}% LTV)</span>
-                <span className="font-medium text-slate-800">
+                <span className="text-titanium">Max Allowed Debt ({ltvLimit}% LTV)</span>
+                <span className="font-medium text-bone">
                   {loading ? '...' : formatUSD((Number(collateral) * ltvLimit) / 100)}
                 </span>
               </div>
-              <div className="border-t border-slate-200 pt-3">
+              <div className="border-t border-hairline pt-3">
                 <div className="flex justify-between">
-                  <span className="font-semibold text-slate-700">Available Credit</span>
-                  <span className="font-semibold text-purple-900">
+                  <span className="font-semibold text-bone-dim">Available Credit</span>
+                  <span className="font-semibold text-brass">
                     {loading ? '...' : formatUSD(availableCredit)}
                   </span>
                 </div>
@@ -109,7 +109,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-white text-purple-300">
+          <div className="flex flex-1 items-center justify-center border border-dashed border-hairline2 bg-obsidian-panel font-mono text-[11px] tracking-widest2 uppercase text-bone-faint">
             Activity feed — coming soon
           </div>
         </div>

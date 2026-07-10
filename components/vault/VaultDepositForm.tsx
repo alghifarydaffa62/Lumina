@@ -13,8 +13,8 @@ export default function VaultDepositForm({ onDeposit, disabled }: Props) {
   const valid = amount.length > 0 && Number(amount) > 0
 
   return (
-    <div className="flex-1 rounded-2xl border border-purple-200 bg-white p-6">
-      <h2 className="mb-4 text-lg font-semibold text-slate-800">Deposit Collateral</h2>
+    <div className="flex-1 border border-hairline bg-obsidian-panel p-6">
+      <h2 className="mb-4 font-mono text-[11px] tracking-widest2 uppercase text-bone-dim">Deposit Collateral</h2>
       <div className="flex flex-col gap-4">
         <input
           type="number"
@@ -24,13 +24,13 @@ export default function VaultDepositForm({ onDeposit, disabled }: Props) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           disabled={disabled}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg text-slate-800 outline-none transition focus:border-purple-400 disabled:opacity-50"
+          className="w-full border border-hairline bg-obsidian px-4 py-3 font-mono text-lg text-bone outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-bone-faint"
         />
         <button
           type="button"
           onClick={() => onDeposit(amount, () => setAmount(''))}
           disabled={!valid || disabled}
-          className="rounded-xl bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="border border-brass bg-transparent py-3 font-mono text-[11px] tracking-widest2 uppercase text-brass transition duration-300 hover:bg-brass hover:text-obsidian disabled:cursor-not-allowed disabled:opacity-50"
         >
           {disabled ? 'Processing...' : 'Deposit'}
         </button>
