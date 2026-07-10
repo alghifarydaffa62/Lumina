@@ -1,6 +1,6 @@
 'use client'
 
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import { useMerchantDashboardAuth, useMerchantStore } from '@/hooks/useMerchant'
 import { Store, Receipt } from 'lucide-react'
 

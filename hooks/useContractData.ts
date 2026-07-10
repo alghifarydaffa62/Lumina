@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import { getCollateral, getDebt } from '@/lib/contract'
 
 const LTV_LIMIT = 70

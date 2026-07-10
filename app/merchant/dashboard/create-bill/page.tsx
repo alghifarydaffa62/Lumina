@@ -3,7 +3,7 @@
 import { useMerchantDashboardAuth, useMerchantStore } from '@/hooks/useMerchant'
 import { useMerchantBilling } from '@/hooks/useMerchantBilling'
 import { useQRScanner } from '@/hooks/useQRScanner'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import QRScanner from '@/components/merchant/QRScanner'
 import InvoiceForm from '@/components/merchant/InvoiceForm'
 import { useState } from 'react'

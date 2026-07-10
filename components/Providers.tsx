@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { WalletProvider, NetworkType } from 'stellar-wallet-kit'
+import { SimulatorProvider } from '@/lib/app-wallet'
 import type { ReactNode } from 'react'
 
 const SKIP_PATTERNS = [
@@ -19,9 +20,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       orig.call(console, ...args)
     }
     console.error = filtered
-    return () => {
-      console.error = orig
-    }
+    return () => { console.error = orig }
   }, [])
 
   return (
@@ -36,7 +35,9 @@ export default function Providers({ children }: { children: ReactNode }) {
         },
       }}
     >
-      {children}
+      <SimulatorProvider>
+        {children}
+      </SimulatorProvider>
     </WalletProvider>
   )
 }

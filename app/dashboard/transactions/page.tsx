@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import { useTransactions } from '@/hooks/useTransactions'
 import TransactionList from '@/components/my-card/TransactionList'
 
@@ -19,15 +19,15 @@ export default function TransactionsPage() {
 
   if (!isConnected) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-slate-500">Please connect your wallet.</p>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-slate-400">Connect your wallet to continue</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <h1 className="text-2xl font-bold text-slate-800">Transactions</h1>
+      <h1 className="text-xl font-bold text-slate-800 md:text-2xl">Transactions</h1>
       <div className="flex-1">
         <TransactionList
           transactions={transactions}

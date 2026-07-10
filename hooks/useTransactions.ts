@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useWallet } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 import {
   collection,
   query,

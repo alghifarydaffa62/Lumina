@@ -1,7 +1,7 @@
 export default function LtvGauge({ ratio }: { ratio: number }) {
   const clamped = Math.min(ratio, 100)
   const angle = (clamped / 100) * 360
-  const RADIUS = 60
+  const RADIUS = 80
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS
   const offset = CIRCUMFERENCE - (angle / 360) * CIRCUMFERENCE
 
@@ -13,42 +13,42 @@ export default function LtvGauge({ ratio }: { ratio: number }) {
         : '#ef4444'
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width="160" height="160" viewBox="0 0 160 160">
+    <div className="flex w-full max-w-[260px] flex-col items-center gap-2">
+      <svg viewBox="0 0 200 200" className="w-full">
         <circle
-          cx="80"
-          cy="80"
+          cx="100"
+          cy="100"
           r={RADIUS}
           fill="none"
           stroke="#e5e7eb"
-          strokeWidth="12"
+          strokeWidth="14"
         />
         <circle
-          cx="80"
-          cy="80"
+          cx="100"
+          cy="100"
           r={RADIUS}
           fill="none"
           stroke={color}
-          strokeWidth="12"
+          strokeWidth="14"
           strokeLinecap="round"
-          transform="rotate(-90 80 80)"
+          transform="rotate(-90 100 100)"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={offset}
           className="transition-all duration-500"
         />
         <text
-          x="80"
-          y="70"
+          x="100"
+          y="90"
           textAnchor="middle"
-          className="fill-slate-800 text-2xl font-bold"
+          className="fill-slate-800 text-3xl font-bold"
         >
           {clamped.toFixed(0)}%
         </text>
         <text
-          x="80"
-          y="92"
+          x="100"
+          y="118"
           textAnchor="middle"
-          className="fill-slate-500 text-xs"
+          className="fill-slate-500 text-sm"
         >
           LTV Health
         </text>

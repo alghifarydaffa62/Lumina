@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { ConnectButton, useWallet } from 'stellar-wallet-kit'
+import { ConnectButton } from 'stellar-wallet-kit'
+import { useWallet } from '@/lib/app-wallet'
 
 export default function Navbar() {
   const { isConnected } = useWallet()
