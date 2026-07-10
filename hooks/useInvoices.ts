@@ -45,16 +45,14 @@ export function useInvoices() {
   const [error, setError] = useState<string | null>(null)
   const [indexUrl, setIndexUrl] = useState<string | null>(null)
 
+  const ready = !!account?.address
+
   useEffect(() => {
-    if (!account?.address) {
-      setInvoices([])
-      setLoading(false)
-      return
-    }
+    if (!ready) return
 
     const q = query(
       collection(db, 'invoices'),
-      where('buyerAddress', '==', account.address),
+      where('buyerAddress', '==', account!.address),
       orderBy('createdAt', 'desc'),
     )
 
@@ -89,9 +87,14 @@ export function useInvoices() {
     )
 
     return () => unsub()
-  }, [account?.address])
+  }, [ready, account])
 
-  return { invoices, loading, error, indexUrl }
+  return {
+    invoices: ready ? invoices : [],
+    loading: ready ? loading : false,
+    error: ready ? error : null,
+    indexUrl: ready ? indexUrl : null,
+  }
 }
 
 export function usePayInvoice() {

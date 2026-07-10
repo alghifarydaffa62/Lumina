@@ -34,16 +34,14 @@ export function useTransactions() {
   const [error, setError] = useState<string | null>(null)
   const [indexUrl, setIndexUrl] = useState<string | null>(null)
 
+  const ready = !!account?.address
+
   useEffect(() => {
-    if (!account?.address) {
-      setTransactions([])
-      setLoading(false)
-      return
-    }
+    if (!ready) return
 
     const q = query(
       collection(db, 'invoices'),
-      where('buyerAddress', '==', account.address),
+      where('buyerAddress', '==', account!.address),
       orderBy('createdAt', 'desc'),
     )
 
@@ -77,7 +75,12 @@ export function useTransactions() {
     )
 
     return () => unsub()
-  }, [account?.address])
+  }, [ready, account])
 
-  return { transactions, loading, error, indexUrl }
+  return {
+    transactions: ready ? transactions : [],
+    loading: ready ? loading : false,
+    error: ready ? error : null,
+    indexUrl: ready ? indexUrl : null,
+  }
 }

@@ -7,7 +7,7 @@ export function useQRScanner() {
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
-  const instanceRef = useRef<any>(null)
+  const instanceRef = useRef<{ stop: () => Promise<void> } | null>(null)
   const runningRef = useRef(false)
   const elId = 'qr-reader-element'
 
@@ -71,14 +71,15 @@ export function useQRScanner() {
       )
 
       setCameraReady(true)
-    } catch (err: any) {
+    } catch (err: unknown) {
       runningRef.current = false
-      if (err?.toString().includes('NotAllowed')) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('NotAllowed')) {
         setError('Camera permission denied. Please allow camera access.')
-      } else if (err?.toString().includes('NotFound')) {
+      } else if (msg.includes('NotFound')) {
         setError('No camera found on this device.')
       } else {
-        setError(err?.message || 'Failed to start camera.')
+        setError(msg || 'Failed to start camera.')
       }
       setScanning(false)
     }

@@ -21,7 +21,7 @@ function formatCountdown(ms: number): string {
 }
 
 export default function InvoiceBillList({ invoices, loading, error, indexUrl, payingId, onPay }: Props) {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(0)
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)

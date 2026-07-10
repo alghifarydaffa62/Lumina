@@ -1,1 +1,92 @@
 @import "tailwindcss";
+
+/* LUMINA — design tokens (Tailwind v4, CSS-first config)
+   Obsidian / Bone / Brushed Titanium / Deep Brass
+   Private-bank brutalism: hairline structure, near-zero radius, extreme restraint. */
+@theme {
+  /* colors — each generates bg-*, text-*, border-* utilities automatically */
+  --color-obsidian: #0a0a0a;
+  --color-obsidian-raised: #131313;
+  --color-obsidian-panel: #0f0f10;
+
+  --color-bone: #ececE7;
+  --color-bone-dim: #c7c6bf;
+  --color-bone-faint: #8c8b85;
+
+  --color-titanium: #9a9a96;
+  --color-titanium-dark: #5b5b57;
+
+  --color-brass: #b08d3e;
+  --color-brass-bright: #d4af5a;
+  --color-brass-dim: #6e5827;
+
+  --color-hairline: rgba(236, 236, 231, 0.1);
+  --color-hairline2: rgba(236, 236, 231, 0.18);
+
+  /* type — the font stacks below are set at runtime by next/font on <html>
+     as --font-display-family / --font-body-family / --font-mono-family;
+     we alias them here so font-display / font-body / font-mono utilities exist. */
+  --font-display: var(--font-display-family), sans-serif;
+  --font-body: var(--font-body-family), sans-serif;
+  --font-mono: var(--font-mono-family), monospace;
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1;
+
+  --tracking-tightest: -0.06em;
+  --tracking-widest2: 0.28em;
+
+  --ease-heavy: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 236, 231, 0.2) transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #0a0a0a;
+}
+
+body {
+  background-color: #0a0a0a;
+  color: #ececE7;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background: #b08d3e;
+  color: #0a0a0a;
+}
+
+:focus-visible {
+  outline: 1px solid #d4af5a;
+  outline-offset: 3px;
+}
+
+/* Hairline grid rules used throughout — declared once, applied everywhere,
+   so section paddings never fight for specificity. */
+.rule-t { border-top: 1px solid rgba(236, 236, 231, 0.1); }
+.rule-b { border-bottom: 1px solid rgba(236, 236, 231, 0.1); }
+.rule-l { border-left: 1px solid rgba(236, 236, 231, 0.1); }
+.rule-r { border-right: 1px solid rgba(236, 236, 231, 0.1); }
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}

@@ -30,8 +30,8 @@ export default function Providers({ children }: { children: ReactNode }) {
         autoConnect: true,
         theme: {
           mode: 'dark',
-          primaryColor: '#7c3aed',
-          borderRadius: '16px',
+          primaryColor: '#b08d3e',
+          borderRadius: '0px',
         },
       }}
     >
