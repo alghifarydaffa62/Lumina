@@ -6,7 +6,7 @@ import { TerminalType } from './terminal-type'
 
 export function Cover() {
   return (
-    <section id="index" className="relative min-h-[100svh] flex flex-col justify-end pt-32 pb-0 px-6 md:px-16 overflow-hidden">
+    <section id="index" className="relative min-h-svh flex flex-col justify-end pt-32 pb-0 px-6 md:px-16 overflow-hidden">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -18,7 +18,7 @@ export function Cover() {
         }}
       />
 
-      <div className="mx-auto max-w-[1440px] w-full">
+      <div className="mx-auto max-w-360 w-full">
         <div className="grid grid-cols-12 gap-6 items-end">
           <div className="col-span-12 md:col-span-2 order-2 md:order-1 mt-10 md:mt-0">
             <TerminalType

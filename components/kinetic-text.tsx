@@ -15,11 +15,6 @@ type KineticTextProps = {
   once?: boolean
 }
 
-/**
- * Splits text into words or characters and reveals them with a heavy,
- * deliberate y-axis / opacity motion. No bounce. No spring. Everything
- * settles like weight coming to rest.
- */
 export function KineticText({
   children,
   as: Tag = 'div',
@@ -29,7 +24,13 @@ export function KineticText({
   stagger = 0.045,
   once = true,
 }: KineticTextProps) {
-  const pieces = unit === 'char' ? children.split('') : children.split(' ')
+  const normalized = children.replace(/\\n/g, '\n')
+  const isMultiline = normalized.includes('\n')
+  const lines = isMultiline ? normalized.split('\n') : null
+  
+  const splitText = (text: string) =>
+    unit === 'char' ? text.split('') : text.split(' ')
+  const pieces = isMultiline ? null : splitText(children)
 
   const container: Variants = {
     hidden: {},
@@ -49,6 +50,21 @@ export function KineticText({
 
   const MotionTag = motion(Tag as ElementType) as ElementType
 
+  const CharSpan = ({ piece, isLast }: { piece: string; isLast: boolean }) => (
+    <span
+      className={unit === 'char' && piece === ' ' ? 'w-[0.15em] md:w-[0.35em]' : undefined}
+      style={{
+        display: 'inline-block',
+        overflow: 'hidden',
+      }}
+    >
+      <motion.span variants={item} style={{ display: 'inline-block' }}>
+        {piece === '' ? '\u00A0' : piece}
+        {unit === 'word' && !isLast ? '\u00A0' : ''}
+      </motion.span>
+    </span>
+  )
+
   return (
     <MotionTag
       className={className}
@@ -57,17 +73,21 @@ export function KineticText({
       whileInView="visible"
       viewport={{ once, margin: '-10% 0px -10% 0px' }}
     >
-      {pieces.map((piece, i) => (
-        <span key={i} style={{ display: 'inline-block', overflow: 'hidden' }}>
-          <motion.span
-            variants={item}
-            style={{ display: 'inline-block' }}
-          >
-            {piece === '' ? '\u00A0' : piece}
-            {unit === 'word' && i < pieces.length - 1 ? '\u00A0' : ''}
-          </motion.span>
-        </span>
-      ))}
+      {isMultiline
+        ? lines!.map((line, li) => {
+            const linePieces = splitText(line)
+            return (
+              <span key={li}>
+                {li > 0 && <br />}
+                {linePieces.map((piece, i) => (
+                  <CharSpan key={i} piece={piece} isLast={i === linePieces.length - 1} />
+                ))}
+              </span>
+            )
+          })
+        : pieces!.map((piece, i) => (
+            <CharSpan key={i} piece={piece} isLast={i === pieces!.length - 1} />
+          ))}
     </MotionTag>
   )
 }

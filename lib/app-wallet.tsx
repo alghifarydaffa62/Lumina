@@ -26,7 +26,7 @@ function SimulatorFab({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
     <button
       type="button"
       onClick={onToggle}
-      className="fixed bottom-4 right-4 z-[9999] rounded-full px-4 py-2 text-xs font-bold shadow-2xl transition"
+      className="fixed bottom-4 right-4 z-9999 rounded-full px-4 py-2 text-xs font-bold shadow-2xl transition"
       style={{
         backgroundColor: enabled ? '#059669' : '#6b7280',
         color: '#fff',

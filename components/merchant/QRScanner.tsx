@@ -27,7 +27,7 @@ export default function QRScanner({ elId, scanning, error, onStart, onStop, onRe
       <div
         id={elId}
         className={`overflow-hidden rounded-xl bg-slate-100 transition-all ${
-          scanning ? 'h-auto min-h-[220px]' : 'h-0 min-h-0'
+          scanning ? 'h-auto min-h-55' : 'h-0 min-h-0'
         }`}
       />
 

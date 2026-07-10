@@ -2,19 +2,13 @@ import { ReactNode } from 'react'
 
 type ClauseProps = {
   id: string
-  index: string // e.g. "01", "A.1"
+  index: string 
   title: string
   children: ReactNode
   className?: string
   dense?: boolean
 }
 
-/**
- * A "Clause" — the atomic unit of the Lumina story. Modelled on a private
- * banking agreement: numbered, titled, argued, and closed with a hairline
- * rule before the next clause begins. Replaces the generic hero/feature/
- * testimonial section vocabulary entirely.
- */
 export function Clause({ id, index, title, children, className = '', dense = false }: ClauseProps) {
   return (
     <section
@@ -22,7 +16,7 @@ export function Clause({ id, index, title, children, className = '', dense = fal
       data-clause={id}
       className={`relative rule-t border-hairline ${dense ? 'py-20 md:py-28' : 'py-28 md:py-44'} px-6 md:px-16 ${className}`}
     >
-      <div className="mx-auto max-w-[1440px]">
+      <div className="mx-auto max-w-360">
         <div className="grid grid-cols-12 gap-x-6">
           <div className="col-span-12 md:col-span-3 mb-10 md:mb-0">
             <span className="font-mono text-micro text-brass tracking-widest2 uppercase">

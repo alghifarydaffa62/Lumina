@@ -101,7 +101,7 @@ export default function LuminaPage() {
           <KineticText
             as="h2"
             unit="char"
-            className="font-display text-[11vw] md:text-[5.2vw] leading-[0.9] tracking-tightest uppercase text-bone max-w-3xl"
+            className="font-display text-[11vw] md:text-[4vw] leading-[0.9] uppercase text-bone max-w-3xl"
           >
             Hold the collateral. Forget the debt.
           </KineticText>

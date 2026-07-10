@@ -80,7 +80,7 @@ export default function MerchantSidebar() {
         </div>
 
         {open && (
-          <div className="fixed inset-x-0 top-[60px] z-50 mx-2 rounded-2xl border border-white/10 bg-linear-to-b from-slate-950 via-purple-950 to-slate-950 p-3 shadow-2xl">
+          <div className="fixed inset-x-0 top-15 z-50 mx-2 rounded-2xl border border-white/10 bg-linear-to-b from-slate-950 via-purple-950 to-slate-950 p-3 shadow-2xl">
             <nav className="flex flex-col gap-1">{menu}</nav>
           </div>
         )}

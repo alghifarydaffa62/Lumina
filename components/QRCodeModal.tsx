@@ -60,7 +60,7 @@ export default function QRCodeModal({ value, open, onClose }: Props) {
           <canvas ref={canvasRef} width={220} height={220} className="rounded-xl" />
         )}
 
-        <p className="max-w-[220px] break-all text-center font-mono text-xs text-slate-500">
+        <p className="max-w-55 break-all text-center font-mono text-xs text-slate-500">
           {value.slice(0, 16)}...{value.slice(-8)}
         </p>
       </div>

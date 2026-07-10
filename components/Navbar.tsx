@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { ConnectButton } from 'stellar-wallet-kit'
 import { useWallet } from '@/lib/app-wallet'
+import Link from 'next/link'
 
 const LINKS = [
   { label: 'Index', href: '#index' },
@@ -27,8 +27,10 @@ export default function Navbar() {
   }, [isConnected, pathname, router])
 
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 border-b border-hairline bg-obsidian/80 backdrop-blur-md">
-      <div className="mx-auto max-w-[1600px] px-6 md:px-10 h-16 md:h-20 flex items-center justify-between">
+    <nav className="fixed top-0 inset-x-0 z-50">
+      <div className="absolute inset-0 -z-10 border-b border-hairline bg-obsidian/80 backdrop-blur-md" />
+
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10 h-16 md:h-20 flex items-center justify-between">
         <Link href="/" className="font-display text-lg tracking-tightest text-bone uppercase">
           Lumina
           <span className="text-brass">.</span>

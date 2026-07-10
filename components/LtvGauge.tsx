@@ -13,7 +13,7 @@ export default function LtvGauge({ ratio }: { ratio: number }) {
         : '#ef4444'
 
   return (
-    <div className="flex w-full max-w-[260px] flex-col items-center gap-2">
+    <div className="flex w-full max-w-65 flex-col items-center gap-2">
       <svg viewBox="0 0 200 200" className="w-full">
         <circle
           cx="100"

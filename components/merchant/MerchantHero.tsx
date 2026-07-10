@@ -45,11 +45,6 @@ const TERMS = [
   },
 ]
 
-/**
- * Everything a merchant sees before connecting a wallet. Once connected,
- * MerchantPage swaps this out for the checking / register / redirect
- * states — this component owns no wallet logic of its own.
- */
 export default function MerchantHero() {
   return (
     <>
@@ -76,9 +71,9 @@ export default function MerchantHero() {
         <KineticText
           as="h2"
           unit="char"
-          className="font-display text-[10vw] md:text-[5vw] leading-[0.9] tracking-tightest uppercase text-bone max-w-3xl"
+          className="font-display text-[8vw] md:text-[5vw] leading-[0.9] uppercase text-bone max-w-3xl"
         >
-          Connect a wallet to register your store.
+          Connect a wallet to\nregister your store.
         </KineticText>
         <p className="mt-6 font-mono text-xs tracking-widest2 uppercase text-titanium">
           Use the connect control in the header above.
