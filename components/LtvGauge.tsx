@@ -7,10 +7,10 @@ export default function LtvGauge({ ratio }: { ratio: number }) {
 
   const color =
     clamped < 40
-      ? '#b08d3e'
+      ? '#3f5d48' // forest — healthy
       : clamped < 70
-        ? '#d4af5a'
-        : '#6e5827'
+        ? '#b08d3e' // brass — moderate
+        : '#7a3b3b' // oxblood — critical
 
   return (
     <div className="flex w-full max-w-65 flex-col items-center gap-2">
@@ -20,7 +20,7 @@ export default function LtvGauge({ ratio }: { ratio: number }) {
           cy="100"
           r={RADIUS}
           fill="none"
-          stroke="rgba(236,236,231,0.1)"
+          stroke="rgba(23,24,26,0.08)"
           strokeWidth="14"
         />
         <circle
@@ -40,7 +40,7 @@ export default function LtvGauge({ ratio }: { ratio: number }) {
           x="100"
           y="90"
           textAnchor="middle"
-          className="fill-bone text-3xl font-semibold font-mono"
+          className="fill-ink text-3xl font-semibold font-mono"
         >
           {clamped.toFixed(0)}%
         </text>
@@ -48,12 +48,15 @@ export default function LtvGauge({ ratio }: { ratio: number }) {
           x="100"
           y="118"
           textAnchor="middle"
-          className="fill-titanium text-sm font-mono tracking-widest2"
+          className="fill-ink-faint text-sm font-mono tracking-widest2"
         >
           LTV Health
         </text>
       </svg>
-      <p className="font-mono text-[11px] tracking-widest2 uppercase text-bone-faint">
+      <p
+        className="font-mono text-[11px] tracking-widest2 uppercase"
+        style={{ color }}
+      >
         {clamped < 40
           ? 'Healthy'
           : clamped < 70

@@ -33,29 +33,29 @@ export default function InvoiceForm({
   const selfBill = buyerAddress.trim() === merchantAddress
   const valid = buyerAddress.trim().length > 0
     && itemDescription.trim().length > 0
-    && amountUSDC.length > 0 && amt > 0
+    && /^\d+(\.\d{0,2})?$/.test(amountUSDC) && amt > 0
     && !selfBill
 
   return (
-    <div className="border border-hairline bg-obsidian-panel p-6">
+    <div className="border border-line bg-panel p-6 shadow-sm">
       <div className="mb-5 flex items-center gap-3">
-        <div className="border border-hairline2 bg-obsidian p-2.5">
-          <Receipt className="h-5 w-5 text-brass" />
+        <div className="border border-line2 bg-panel p-2.5">
+          <Receipt className="h-5 w-5 text-brass-dim" />
         </div>
         <div>
-          <h2 className="font-display text-lg tracking-tightest uppercase text-bone">Create Bill</h2>
-          <p className="font-mono text-[10px] tracking-widest2 uppercase text-titanium">{storeName ? `Store: ${storeName}` : ''}</p>
+          <h2 className="font-display text-lg tracking-tightest uppercase text-ink">Create Bill</h2>
+          <p className="font-mono text-[10px] tracking-widest2 uppercase text-ink-faint">{storeName ? `Store: ${storeName}` : ''}</p>
         </div>
       </div>
 
       <div className="flex flex-col gap-4">
         <div>
-          <label className="mb-1.5 block font-mono text-[11px] tracking-widest2 uppercase text-titanium">
+          <label className="mb-1.5 block font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">
             Buyer Address
             <button
               type="button"
               onClick={onScanAgain}
-              className="ml-2 inline-flex items-center gap-1 text-brass hover:text-brass-bright transition duration-300"
+              className="ml-2 inline-flex items-center gap-1 text-brass-dim hover:text-brass transition duration-300"
             >
               <ScanLine size={13} />
               scan
@@ -67,7 +67,7 @@ export default function InvoiceForm({
             value={buyerAddress}
             onChange={(e) => onBuyerAddressChange(e.target.value)}
             disabled={saving}
-            className="w-full border border-hairline bg-obsidian px-4 py-2.5 font-mono text-sm text-bone outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-bone-faint"
+            className="w-full border border-line bg-panel px-4 py-2.5 font-mono text-sm text-ink outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-ink-faint"
           />
           {selfBill && (
             <p className="mt-1 font-mono text-[11px] tracking-widest2 uppercase text-brass-dim">Cannot create a bill for yourself</p>
@@ -75,28 +75,31 @@ export default function InvoiceForm({
         </div>
 
         <div>
-          <label className="mb-1.5 block font-mono text-[11px] tracking-widest2 uppercase text-titanium">Item Description</label>
+          <label className="mb-1.5 block font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">Item Description</label>
           <input
             type="text"
             placeholder="e.g. Coffee, Subscription, ..."
             value={itemDescription}
             onChange={(e) => onItemDescriptionChange(e.target.value)}
             disabled={saving}
-            className="w-full border border-hairline bg-obsidian px-4 py-2.5 text-sm text-bone outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-bone-faint"
+            className="w-full border border-line bg-panel px-4 py-2.5 text-sm text-ink outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-ink-faint"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block font-mono text-[11px] tracking-widest2 uppercase text-titanium">Amount (USDC)</label>
+          <label className="mb-1.5 block font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">Amount (USDC)</label>
           <input
             type="number"
             step="0.01"
             min="0"
             placeholder="0.00"
             value={amountUSDC}
-            onChange={(e) => onAmountUSDCChange(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value
+              if (v === '' || /^\d+(\.\d{0,2})?$/.test(v)) onAmountUSDCChange(v)
+            }}
             disabled={saving}
-            className="w-full border border-hairline bg-obsidian px-4 py-3 font-mono text-lg text-bone outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-bone-faint"
+            className="w-full border border-line bg-panel px-4 py-3 font-mono text-lg text-ink outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-ink-faint"
           />
         </div>
 
@@ -104,7 +107,7 @@ export default function InvoiceForm({
           type="button"
           onClick={onSubmit}
           disabled={!valid || saving}
-          className="mt-2 border border-brass bg-transparent py-3 font-mono text-[11px] tracking-widest2 uppercase text-brass transition duration-300 hover:bg-brass hover:text-obsidian disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 border border-brass bg-brass py-3 font-mono text-[11px] tracking-widest2 uppercase font-semibold text-obsidian transition duration-300 hover:bg-obsidian hover:text-brass disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? 'Sending...' : 'Send Bill'}
         </button>

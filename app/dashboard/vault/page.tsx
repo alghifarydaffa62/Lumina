@@ -19,7 +19,7 @@ export default function VaultPage() {
   if (!isConnected) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-titanium">Connect your wallet to continue</p>
+        <p className="text-sm text-ink-faint">Connect your wallet to continue</p>
       </div>
     )
   }
@@ -27,12 +27,12 @@ export default function VaultPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-display text-xl tracking-tightest text-bone uppercase md:text-2xl">Vault</h1>
+        <h1 className="font-display text-xl tracking-tightest text-ink uppercase md:text-2xl">Vault</h1>
         <button
           type="button"
           onClick={refresh}
           disabled={loading}
-          className="self-start border border-hairline2 bg-transparent px-4 py-2 font-mono text-[11px] tracking-widest2 uppercase text-bone transition duration-300 hover:bg-bone hover:text-obsidian disabled:opacity-50 sm:self-auto"
+          className="self-start border border-line2 bg-panel px-4 py-2 font-mono text-[11px] tracking-widest2 uppercase text-ink transition duration-300 hover:bg-ink hover:text-panel disabled:opacity-50 sm:self-auto"
         >
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>

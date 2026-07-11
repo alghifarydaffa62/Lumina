@@ -21,14 +21,10 @@ export default function CardBalances({ availableCredit, collateral, debt, loadin
       {cards.map((c) => (
         <div
           key={c.label}
-          className={`border p-5 ${
-            c.accent
-              ? 'border-brass/30 bg-brass/5'
-              : 'border-hairline bg-obsidian-panel'
-          }`}
+          className="border border-line bg-panel p-5 shadow-sm"
         >
-          <p className="font-mono text-[11px] tracking-widest2 uppercase text-titanium">{c.label}</p>
-          <p className={`mt-2 text-2xl font-semibold ${c.accent ? 'text-brass' : 'text-bone'}`}>
+          <p className="font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">{c.label}</p>
+          <p className={`mt-2 text-2xl font-semibold ${c.accent ? 'text-brass-dim' : 'text-ink'}`}>
             {loading ? '...' : c.value}
           </p>
         </div>
