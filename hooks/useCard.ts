@@ -59,9 +59,8 @@ export function useCardBalances() {
     return () => { cancelled = true }
   }, [account, toast, fetchKey])
 
-  const collateralNum = Number(collateral)
-  const debtNum = Number(debt)
-  const availableCredit: bigint = BigInt(Math.max(0, Math.round(collateralNum * (LTV_LIMIT / 100) - debtNum)))
+  const maxDebt = collateral * BigInt(LTV_LIMIT) / BigInt(100)
+  const availableCredit: bigint = maxDebt > debt ? maxDebt - debt : BigInt(0)
 
   const refresh = useCallback(() => {
     setLoading(true)

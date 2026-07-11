@@ -11,10 +11,8 @@ export default function VaultPage() {
   const { collateral, debt, loading, refresh } = useVaultBalances()
   const { isPending, handleDeposit, handleWithdraw } = useVaultActions(refresh)
 
-  const collateralNum = Number(collateral)
-  const debtNum = Number(debt)
-  const maxAllowed = (collateralNum * LTV_LIMIT) / 100
-  const ltvRatio = maxAllowed > 0 ? (debtNum / maxAllowed) * 100 : 0
+  const maxAllowed = collateral * BigInt(LTV_LIMIT) / BigInt(100)
+  const ltvRatio = maxAllowed > BigInt(0) ? Number(debt * BigInt(100) / maxAllowed) : 0
 
   if (!isConnected) {
     return (

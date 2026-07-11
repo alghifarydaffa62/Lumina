@@ -11,8 +11,8 @@ export interface ContractData {
   debt: bigint
   loading: boolean
   error: string | null
-  maxAllowedDebt: number
-  availableCredit: number
+  maxAllowedDebt: bigint
+  availableCredit: bigint
   ltvHealthRatio: number
   ltvLimit: number
   refresh: () => void
@@ -61,11 +61,9 @@ export function useContractData(): ContractData {
     setFetchKey((k) => k + 1)
   }, [])
 
-  const collateralNum = Number(collateral)
-  const debtNum = Number(debt)
-  const maxAllowedDebt = (collateralNum * LTV_LIMIT) / 100
-  const availableCredit = Math.max(0, maxAllowedDebt - debtNum)
-  const ltvHealthRatio = maxAllowedDebt > 0 ? (debtNum / maxAllowedDebt) * 100 : 0
+  const maxAllowedDebt = collateral * BigInt(LTV_LIMIT) / BigInt(100)
+  const availableCredit = maxAllowedDebt > debt ? maxAllowedDebt - debt : BigInt(0)
+  const ltvHealthRatio = maxAllowedDebt > BigInt(0) ? Number(debt * BigInt(100) / maxAllowedDebt) : 0
 
   return {
     collateral,
