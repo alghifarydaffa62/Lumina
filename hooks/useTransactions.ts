@@ -11,6 +11,7 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { useFirebaseAuthContext } from '@/lib/firebase-auth-context'
 
 export interface Transaction {
   id: string
@@ -29,19 +30,22 @@ function extractIndexUrl(msg: string): string | null {
 
 export function useTransactions() {
   const { account } = useWallet()
+  const { isAuthenticated, authLoading } = useFirebaseAuthContext()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [indexUrl, setIndexUrl] = useState<string | null>(null)
 
-  const ready = !!account?.address
+  const ready = !!account?.address && isAuthenticated
 
   useEffect(() => {
-    if (!ready) return
+    if (!account?.address) return
+    if (authLoading) return
+    if (!isAuthenticated) return
 
     const q = query(
       collection(db, 'invoices'),
-      where('buyerAddress', '==', account!.address),
+      where('buyerAddress', '==', account.address),
       orderBy('createdAt', 'desc'),
     )
 
@@ -75,7 +79,7 @@ export function useTransactions() {
     )
 
     return () => unsub()
-  }, [ready, account])
+  }, [account, authLoading, isAuthenticated])
 
   return {
     transactions: ready ? transactions : [],

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useWallet } from '@/lib/app-wallet'
+import { useFirebaseAuthContext } from '@/lib/firebase-auth-context'
 import {
   LayoutDashboard,
   CreditCard,
@@ -25,12 +26,14 @@ const menuItems = [
 export default function DashboardSidebar() {
   const pathname = usePathname()
   const { account, disconnect } = useWallet()
+  const { signOut } = useFirebaseAuthContext()
   const router = useRouter()
   const [showQR, setShowQR] = useState(false)
   const [open, setOpen] = useState(false)
 
-  const handleLogout = () => {
-    disconnect()
+  const handleLogout = async () => {
+    await disconnect()
+    await signOut()
     router.push('/')
   }
 

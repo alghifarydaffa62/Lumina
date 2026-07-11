@@ -10,6 +10,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 import type { DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase-admin'
 import { getDebt } from '@/lib/contract'
+import crypto from 'node:crypto'
 
 const CONTRACT_ID = process.env.CONTRACT_ID || ''
 const RPC_URL = 'https://soroban-testnet.stellar.org'
@@ -99,12 +100,22 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization') || ''
   const cronSecret = process.env.CRON_SECRET
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const expected = `Bearer ${cronSecret}`
+  if (
+    authHeader.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
+  ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (!process.env.ADMIN_SECRET_KEY) {
     return NextResponse.json({ error: 'ADMIN_SECRET_KEY not configured' }, { status: 500 })
+  }
+  if (!process.env.CONTRACT_ID) {
+    return NextResponse.json({ error: 'CONTRACT_ID not configured' }, { status: 500 })
   }
 
   const locked = await acquireLock()

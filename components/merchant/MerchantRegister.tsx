@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { KineticText, HEAVY } from '@/components/kinetic-text'
 
@@ -8,12 +8,16 @@ interface Props {
   onRegister: (storeName: string) => Promise<void>
 }
 
+const fadeUp = { opacity: 1, y: 0 }
+const fadeDown = { opacity: 0, y: 16 }
+const transition = { duration: 0.8, ease: HEAVY, delay: 0.3 }
+
 export default function MerchantRegister({ onRegister }: Props) {
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!name.trim()) return
     setSaving(true)
     setError('')
@@ -24,7 +28,7 @@ export default function MerchantRegister({ onRegister }: Props) {
     } finally {
       setSaving(false)
     }
-  }
+  }, [name, onRegister])
 
   return (
     <div className="flex flex-1 min-h-svh items-center justify-center bg-obsidian px-6">
@@ -44,9 +48,9 @@ export default function MerchantRegister({ onRegister }: Props) {
         </p>
 
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: HEAVY, delay: 0.3 }}
+          initial={fadeDown}
+          animate={fadeUp}
+          transition={transition}
           className="border border-hairline2 bg-obsidian-panel/60"
         >
           {error && (

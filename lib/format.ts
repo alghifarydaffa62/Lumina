@@ -1,7 +1,7 @@
 const STELLAR_DECIMALS = 7
 
 export function formatAmount(raw: number | bigint, decimals = STELLAR_DECIMALS): string {
-  const big = BigInt(raw)
+  const big = typeof raw === 'number' ? BigInt(Math.floor(raw)) : raw
   const divisor = BigInt(10) ** BigInt(decimals)
   const whole = big / divisor
   const fraction = big % divisor
