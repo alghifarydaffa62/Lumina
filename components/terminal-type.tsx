@@ -12,11 +12,6 @@ type TerminalTypeProps = {
   startDelay?: number
 }
 
-/**
- * Types out a sequence of lines character-by-character, once the block
- * enters view. Used sparingly — for the moments in the copy that should
- * feel like a system speaking, not a marketer.
- */
 export function TerminalType({
   lines,
   className = '',

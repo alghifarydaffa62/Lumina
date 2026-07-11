@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 /* LUMINA — design tokens (Tailwind v4, CSS-first config)
-   Obsidian / Bone / Brushed Titanium / Deep Brass
-   Private-bank brutalism: hairline structure, near-zero radius, extreme restraint. */
+   Three layers of palette now:
+   - obsidian/bone/brass  → marketing pages (Lumina, Lumina Merchant)
+   - paper/panel/ink      → dashboard content area (light workspace)
+   - obsidian→bronze→brass gradient → dashboard chrome (sidebar, header) */
 @theme {
-  /* colors — each generates bg-*, text-*, border-* utilities automatically */
+  /* ---- marketing / dark-chrome palette ---- */
   --color-obsidian: #0a0a0a;
   --color-obsidian-raised: #131313;
   --color-obsidian-panel: #0f0f10;
+  --color-bronze-black: #1f160b; /* warm dark-gold transitional stop for chrome gradients */
 
   --color-bone: #ececE7;
   --color-bone-dim: #c7c6bf;
@@ -16,16 +19,34 @@
   --color-titanium: #9a9a96;
   --color-titanium-dark: #5b5b57;
 
+  --color-hairline: rgba(236, 236, 231, 0.1);
+  --color-hairline2: rgba(236, 236, 231, 0.18);
+
+  /* ---- dashboard content palette (light) ---- */
+  --color-paper: #edeee9;       /* screen background — off-white, cool, not #fff */
+  --color-panel: #ffffff;       /* content cards — sit above paper */
+  --color-panel-soft: #f7f6f2;
+
+  --color-ink: #17181a;
+  --color-ink-dim: #55564f;
+  --color-ink-faint: #9c9b92;
+
+  --color-line: rgba(23, 24, 26, 0.08);
+  --color-line2: rgba(23, 24, 26, 0.14);
+
+  --color-forest: #3f5d48;
+  --color-forest-dim: #2c4133;
+
+  --color-oxblood: #7a3b3b;      /* on light panels */
+  --color-oxblood-dim: #582b2b;
+  --color-oxblood-bright: #c1615b; /* on dark chrome — needs the extra lightness to read */
+
+  /* ---- shared accent ---- */
   --color-brass: #b08d3e;
   --color-brass-bright: #d4af5a;
   --color-brass-dim: #6e5827;
 
-  --color-hairline: rgba(236, 236, 231, 0.1);
-  --color-hairline2: rgba(236, 236, 231, 0.18);
-
-  /* type — the font stacks below are set at runtime by next/font on <html>
-     as --font-display-family / --font-body-family / --font-mono-family;
-     we alias them here so font-display / font-body / font-mono utilities exist. */
+  /* ---- type ---- */
   --font-display: var(--font-display-family), sans-serif;
   --font-body: var(--font-body-family), sans-serif;
   --font-mono: var(--font-mono-family), monospace;
@@ -75,12 +96,19 @@ body {
   outline-offset: 3px;
 }
 
-/* Hairline grid rules used throughout — declared once, applied everywhere,
-   so section paddings never fight for specificity. */
 .rule-t { border-top: 1px solid rgba(236, 236, 231, 0.1); }
 .rule-b { border-bottom: 1px solid rgba(236, 236, 231, 0.1); }
 .rule-l { border-left: 1px solid rgba(236, 236, 231, 0.1); }
 .rule-r { border-right: 1px solid rgba(236, 236, 231, 0.1); }
+
+/* Dashboard chrome gradient — obsidian into a warm bronze-black, with a
+   faint brass sheen bleeding in from the top edge. Used by the sidebar
+   and header only; the content area stays on the light `paper` palette. */
+.chrome-gradient {
+  background-image:
+    radial-gradient(120% 60% at 15% 0%, rgba(212, 175, 90, 0.16), transparent 60%),
+    linear-gradient(165deg, #0a0a0a 0%, #14100a 45%, #1f160b 100%);
+}
 
 .noise-overlay {
   position: fixed;

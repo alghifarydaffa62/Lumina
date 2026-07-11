@@ -27,7 +27,7 @@ export default function MerchantRegister({ onRegister }: Props) {
   }
 
   return (
-    <div className="flex flex-1 min-h-[100svh] items-center justify-center bg-obsidian px-6">
+    <div className="flex flex-1 min-h-svh items-center justify-center bg-obsidian px-6">
       <div className="w-full max-w-md">
         <span className="font-mono text-micro text-brass tracking-widest2 uppercase">
           01 — Registration

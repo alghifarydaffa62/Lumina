@@ -20,14 +20,14 @@ export default function TransactionsPage() {
   if (!isConnected) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-slate-400">Connect your wallet to continue</p>
+        <p className="text-sm text-ink-faint">Connect your wallet to continue</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800 md:text-2xl">Transactions</h1>
+      <h1 className="font-display text-xl tracking-tightest text-ink uppercase md:text-2xl">Transactions</h1>
       <div className="flex-1">
         <TransactionList
           transactions={transactions}

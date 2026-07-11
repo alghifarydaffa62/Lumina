@@ -30,27 +30,27 @@ export default function InvoiceBillList({ invoices, loading, error, indexUrl, pa
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-2xl border border-purple-200 bg-white p-12">
-        <p className="text-sm text-slate-400">Loading invoices...</p>
+      <div className="flex items-center justify-center border border-line bg-panel p-12 shadow-sm">
+        <p className="font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">Loading invoices...</p>
       </div>
     )
   }
 
   if (error && indexUrl) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+      <div className="border border-line bg-panel p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <Database className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+          <Database className="mt-0.5 h-5 w-5 shrink-0 text-brass-dim" />
           <div className="space-y-2 text-sm">
-            <p className="font-medium text-amber-800">Firestore index needed</p>
-            <p className="text-amber-700">
+            <p className="font-medium text-ink">Firestore index needed</p>
+            <p className="text-ink-dim">
               This query needs a composite index to run. Click the button below to create it in Firebase Console.
             </p>
             <a
               href={indexUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-700"
+              className="inline-block border border-line2 bg-panel px-4 py-2 font-mono text-[11px] tracking-widest2 uppercase text-ink transition duration-300 hover:bg-ink hover:text-panel"
             >
               Create Index
             </a>
@@ -62,7 +62,7 @@ export default function InvoiceBillList({ invoices, loading, error, indexUrl, pa
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+      <div className="border border-line bg-panel p-4 text-sm text-ink-dim shadow-sm">
         Failed to load invoices: {error}
       </div>
     )
@@ -76,13 +76,13 @@ export default function InvoiceBillList({ invoices, loading, error, indexUrl, pa
 
   if (!visible.length) {
     return (
-      <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-white py-20">
+      <div className="flex flex-1 items-center justify-center border border-dashed border-line2 bg-panel-soft py-20">
         <div className="flex flex-col items-center gap-3">
-          <div className="rounded-full bg-purple-100 p-3">
-            <ShoppingCart className="h-6 w-6 text-purple-400" />
+          <div className="border border-line2 bg-panel p-3">
+            <ShoppingCart className="h-6 w-6 text-ink-faint" />
           </div>
-          <p className="text-sm font-medium text-purple-400">No pending invoices</p>
-          <p className="text-xs text-purple-300">
+          <p className="font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">No pending invoices</p>
+          <p className="text-xs text-ink-faint">
             Ask a merchant to scan your wallet to receive a bill
           </p>
         </div>
@@ -101,23 +101,23 @@ export default function InvoiceBillList({ invoices, loading, error, indexUrl, pa
         return (
           <div
             key={inv.id}
-            className="rounded-xl border border-slate-200 bg-white p-4 transition hover:shadow-sm"
+            className="border border-line bg-panel p-4 shadow-sm transition duration-300 hover:bg-panel-soft"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                  <span className="border border-line2 bg-panel px-2 py-0.5 font-mono text-[11px] tracking-widest2 uppercase text-brass-dim">
                     {inv.merchantName}
                   </span>
                   {expired && (
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                    <span className="flex items-center gap-1 font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">
                       Expired
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-slate-700">{inv.itemDescription}</p>
-                <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span className="font-mono">{inv.buyerAddress.slice(0, 8)}...</span>
+                <p className="text-sm text-ink-dim">{inv.itemDescription}</p>
+                <div className="flex items-center gap-3 font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">
+                  <span>{inv.buyerAddress.slice(0, 8)}...</span>
                   {inv.createdAt && (
                     <span className="flex items-center gap-1">
                       <Clock size={11} />
@@ -125,7 +125,7 @@ export default function InvoiceBillList({ invoices, loading, error, indexUrl, pa
                     </span>
                   )}
                   {!expired && (
-                    <span className="flex items-center gap-1 font-mono text-amber-600">
+                    <span className="flex items-center gap-1 text-brass-dim">
                       <Timer size={11} />
                       {formatCountdown(left)}
                     </span>
@@ -134,7 +134,7 @@ export default function InvoiceBillList({ invoices, loading, error, indexUrl, pa
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                <span className="text-lg font-semibold text-slate-800">
+                <span className="text-lg font-semibold text-ink">
                   {inv.amountUSDC.toFixed(2)} USDC
                 </span>
                 {!expired && (
@@ -142,7 +142,7 @@ export default function InvoiceBillList({ invoices, loading, error, indexUrl, pa
                     type="button"
                     onClick={() => onPay(inv)}
                     disabled={isPaying}
-                    className="rounded-lg bg-purple-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="border border-brass bg-transparent px-4 py-1.5 font-mono text-[11px] tracking-widest2 uppercase text-brass-dim transition duration-300 hover:bg-brass hover:text-obsidian disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isPaying ? 'Processing...' : 'Pay Now'}
                   </button>

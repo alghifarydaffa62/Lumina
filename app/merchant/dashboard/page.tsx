@@ -14,34 +14,34 @@ export default function MerchantDashboardPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-6">
+        <div className="border border-line bg-panel p-6 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-purple-100 p-2.5">
-              <Store className="h-5 w-5 text-purple-600" />
+            <div className="border border-line2 bg-panel p-2.5">
+              <Store className="h-5 w-5 text-brass-dim" />
             </div>
             <div>
-              <p className="text-sm text-purple-400">Store Name</p>
-              <p className="text-xl font-semibold text-purple-900">
+              <p className="font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">Store Name</p>
+              <p className="mt-1 text-xl font-semibold text-ink">
                 {store?.storeName || '—'}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-6">
+        <div className="border border-line bg-panel p-6 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-purple-100 p-2.5">
-              <Receipt className="h-5 w-5 text-purple-600" />
+            <div className="border border-line2 bg-panel p-2.5">
+              <Receipt className="h-5 w-5 text-brass-dim" />
             </div>
             <div>
-              <p className="text-sm text-purple-400">Status</p>
-              <p className="text-xl font-semibold text-purple-900">Ready to accept payments</p>
+              <p className="font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">Status</p>
+              <p className="mt-1 text-xl font-semibold text-ink">Ready to accept payments</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-white text-purple-300">
-        <p className="text-sm">Go to <strong>Create Bill</strong> to send an invoice</p>
+      <div className="flex flex-1 items-center justify-center border border-dashed border-line2 bg-panel-soft font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">
+        <p>Go to <strong className="text-brass-dim">Create Bill</strong> to send an invoice</p>
       </div>
     </div>
   )

@@ -12,9 +12,9 @@ interface Props {
 
 export default function VaultLtvPanel({ collateral, debt, ltvRatio, loading }: Props) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl border border-purple-200 bg-white p-6">
+    <div className="flex flex-col items-center gap-4 border border-line bg-panel p-6 shadow-sm">
       <LtvGauge ratio={ltvRatio} />
-      <div className="text-center text-xs text-slate-400">
+      <div className="text-center font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">
         <p>Collateral: {loading ? '...' : formatAmount(collateral)}</p>
         <p>Debt: {loading ? '...' : formatAmount(debt)}</p>
       </div>

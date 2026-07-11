@@ -10,11 +10,6 @@ const NODES = [
   { code: 'C', label: 'Wallet Credited', sub: 'Merchant USDC' },
 ]
 
-/**
- * The merchant-side signature: settlement isn't described, it's timed.
- * A counter races through the three nodes in well under a second, then
- * sits next to the industry number, struck through.
- */
 export function RouteFlow() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-20%' })
@@ -63,7 +58,7 @@ export function RouteFlow() {
 
       <div className="px-6 md:px-10 py-14 md:py-20">
         <div className="grid grid-cols-3 gap-4 md:gap-10 relative">
-          <div className="absolute top-[10px] left-[8%] right-[8%] h-px bg-hairline2 hidden md:block">
+          <div className="absolute top-2.5 left-[8%] right-[8%] h-px bg-hairline2 hidden md:block">
             <motion.div
               className="h-full bg-brass"
               initial={{ scaleX: 0 }}
@@ -81,7 +76,7 @@ export function RouteFlow() {
                   scale: i === activeNode && !settled ? 1.4 : 1,
                 }}
                 transition={{ duration: 0.4, ease: HEAVY }}
-                className="w-[10px] h-[10px] rounded-full mb-5"
+                className="w-2.5 h-2.5 rounded-full mb-5"
               />
               <p className="font-mono text-[10px] tracking-widest2 text-titanium uppercase mb-1">
                 {node.code}

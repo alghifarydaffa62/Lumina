@@ -20,7 +20,7 @@ export default function QRCodeModal({ value, open, onClose }: Props) {
       qr.toCanvas(canvasRef.current, value, {
         width: 220,
         margin: 2,
-        color: { dark: '#1e1b4b', light: '#ffffff' },
+        color: { dark: '#ecece7', light: '#0a0a0a' },
       }).catch(() => setError(true))
     })
   }, [value, open])
@@ -36,31 +36,31 @@ export default function QRCodeModal({ value, open, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="flex flex-col items-center gap-5 rounded-2xl border border-purple-200 bg-white p-8 shadow-xl">
+      <div className="flex flex-col items-center gap-5 border border-hairline bg-obsidian-raised p-8">
         <button
           type="button"
           onClick={onClose}
-          className="self-end text-slate-400 transition hover:text-slate-600"
+          className="self-end text-titanium transition duration-300 hover:text-bone"
         >
           <X size={20} />
         </button>
 
-        <div className="rounded-xl bg-purple-100 p-3">
-          <QrCode className="h-6 w-6 text-purple-600" />
+        <div className="border border-hairline2 bg-obsidian-panel p-3">
+          <QrCode className="h-6 w-6 text-brass" />
         </div>
 
-        <h3 className="text-lg font-semibold text-slate-800">Your Wallet Address</h3>
+        <h3 className="font-display text-lg tracking-tightest uppercase text-bone">Your Wallet Address</h3>
 
         {error ? (
-          <p className="text-sm text-red-500">Failed to generate QR code</p>
+          <p className="text-sm text-brass-dim">Failed to generate QR code</p>
         ) : (
-          <canvas ref={canvasRef} width={220} height={220} className="rounded-xl" />
+          <canvas ref={canvasRef} width={220} height={220} />
         )}
 
-        <p className="max-w-[220px] break-all text-center font-mono text-xs text-slate-500">
+        <p className="max-w-55 break-all text-center font-mono text-[11px] tracking-widest2 text-bone-faint">
           {value.slice(0, 16)}...{value.slice(-8)}
         </p>
       </div>

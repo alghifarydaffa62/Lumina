@@ -10,11 +10,11 @@ interface Props {
 export default function VaultDepositForm({ onDeposit, disabled }: Props) {
   const [amount, setAmount] = useState('')
 
-  const valid = amount.length > 0 && Number(amount) > 0
+  const valid = /^\d+(\.\d*)?$/.test(amount) && Number(amount) > 0
 
   return (
-    <div className="flex-1 rounded-2xl border border-purple-200 bg-white p-6">
-      <h2 className="mb-4 text-lg font-semibold text-slate-800">Deposit Collateral</h2>
+    <div className="flex-1 border border-line bg-panel p-6 shadow-sm">
+      <h2 className="mb-4 font-mono text-[11px] tracking-widest2 uppercase font-semibold text-ink-dim">Deposit Collateral</h2>
       <div className="flex flex-col gap-4">
         <input
           type="number"
@@ -22,15 +22,18 @@ export default function VaultDepositForm({ onDeposit, disabled }: Props) {
           min="0"
           placeholder="0.00"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value
+            if (v === '' || /^\d+(\.\d*)?$/.test(v)) setAmount(v)
+          }}
           disabled={disabled}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg text-slate-800 outline-none transition focus:border-purple-400 disabled:opacity-50"
+          className="w-full border border-line bg-panel px-4 py-3 font-mono text-lg text-ink outline-none transition duration-300 focus:border-brass/50 disabled:opacity-50 placeholder:text-ink-faint"
         />
         <button
           type="button"
           onClick={() => onDeposit(amount, () => setAmount(''))}
           disabled={!valid || disabled}
-          className="rounded-xl bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="border border-brass bg-brass py-3 font-mono text-[11px] tracking-widest2 uppercase font-semibold text-obsidian transition duration-300 hover:bg-obsidian hover:text-brass disabled:cursor-not-allowed disabled:opacity-50"
         >
           {disabled ? 'Processing...' : 'Deposit'}
         </button>

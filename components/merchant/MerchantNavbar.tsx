@@ -2,7 +2,6 @@
 
 import { ConnectButton } from 'stellar-wallet-kit'
 import Link from 'next/link'
-
 const LINKS = [
   { label: 'Docket', href: '#docket' },
   { label: 'Routing', href: '#routing' },
@@ -11,8 +10,10 @@ const LINKS = [
 
 export default function MerchantNavbar() {
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 border-b border-hairline bg-obsidian/80 backdrop-blur-md">
-      <div className="mx-auto max-w-[1600px] px-6 md:px-10 h-16 md:h-20 flex items-center justify-between">
+    <nav className="fixed top-0 inset-x-0 z-50">
+      <div className="absolute inset-0 -z-10 border-b border-hairline bg-obsidian/80 backdrop-blur-md" />
+
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10 h-16 md:h-20 flex items-center justify-between">
         <a href="/merchant" className="font-display text-lg tracking-tightest text-bone uppercase">
           Lumina <span className="text-titanium/60 text-sm align-top">Merchant</span>
         </a>
@@ -20,12 +21,12 @@ export default function MerchantNavbar() {
         <ul className="hidden md:flex items-center gap-10">
           {LINKS.map((link) => (
             <li key={link.label}>
-              <a
+              <Link
                 href={link.href}
                 className="font-mono text-[11px] tracking-widest2 uppercase text-titanium hover:text-bone transition-colors duration-300"
               >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
           <li className="rule-l border-hairline2 pl-10">

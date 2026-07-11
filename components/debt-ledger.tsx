@@ -11,11 +11,6 @@ const STAGES = [
   { label: 'DEBT DISSOLVED', value: 0, tag: 'SETTLED' },
 ]
 
-/**
- * The one signature moment on the cardholder page: the debt lifecycle,
- * rendered as a live private-ledger readout rather than an illustration.
- * This is the mechanic made visible — deposit, spend, silent repayment.
- */
 export function DebtLedger() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-20% 0px -20% 0px' })

@@ -6,12 +6,6 @@ type IndexRailProps = {
   items: { id: string; label: string }[]
 }
 
-/**
- * A fixed vertical index, styled like the contents page of a bound
- * agreement. Tracks which Clause is in view and marks it in brass.
- * Hidden below lg — on small screens the numbering inside each Clause
- * carries the same information.
- */
 export function IndexRail({ items }: IndexRailProps) {
   const [active, setActive] = useState(items[0]?.id)
 
