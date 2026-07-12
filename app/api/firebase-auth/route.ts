@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { Transaction, Keypair, Networks } from '@stellar/stellar-sdk'
-import { getAdminAuth } from '@/lib/firebase-admin'
+import { createFirebaseCustomToken } from '@/lib/firebase-admin'
 import crypto from 'node:crypto'
 
 const AUTH_SECRET = crypto.randomUUID()
@@ -79,8 +79,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    const auth = await getAdminAuth()
-    const customToken = await auth.createCustomToken(sourceAddress)
+    const customToken = await createFirebaseCustomToken(sourceAddress)
 
     return NextResponse.json({ token: customToken })
   } catch (err) {

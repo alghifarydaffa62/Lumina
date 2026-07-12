@@ -27,7 +27,7 @@ export default function Providers({ children }: { children: ReactNode }) {
     <WalletProvider
       config={{
         network: NetworkType.TESTNET,
-        autoConnect: true,
+        autoConnect: false,
         theme: {
           mode: 'dark',
           primaryColor: '#B08D3E',

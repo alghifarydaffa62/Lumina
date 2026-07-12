@@ -76,11 +76,11 @@ export function useFirebaseAuth() {
   }, [])
 
   useEffect(() => {
-    if (isConnected && account?.address && !firebaseUser && !authLoading) {
+    if (isConnected && account?.address && !firebaseUser && !authLoading && !authError) {
       const id = setTimeout(() => authenticate(), 0)
       return () => clearTimeout(id)
     }
-  }, [isConnected, account?.address, firebaseUser, authLoading, authenticate])
+  }, [isConnected, account?.address, firebaseUser, authLoading, authError, authenticate])
 
   const isAuthenticated = !!firebaseUser
   const uid = firebaseUser?.uid ?? null

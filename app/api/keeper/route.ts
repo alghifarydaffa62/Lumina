@@ -6,10 +6,6 @@ import {
   TransactionBuilder,
 } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
-import { Timestamp } from 'firebase-admin/firestore'
-import type { DocumentSnapshot, QueryDocumentSnapshot, Firestore } from 'firebase-admin/firestore'
-import { getAdminDb } from '@/lib/firebase-admin'
-import { getDebt } from '@/lib/contract'
 import crypto from 'node:crypto'
 
 const CONTRACT_ID = process.env.CONTRACT_ID || ''
@@ -17,32 +13,6 @@ const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 const YIELD_AMOUNT = BigInt('20000000')
 const LOCK_TIMEOUT_MS = 10 * 60 * 1000
-
-async function acquireLock(db: Firestore): Promise<boolean> {
-  const lockRef = db.collection('locks').doc('keeper')
-  try {
-    await db.runTransaction(async (transaction) => {
-      const snap = await transaction.get(lockRef) as DocumentSnapshot
-      if (snap.exists) {
-        const d = snap.data()
-        if (d?.locked && d.expiresAt?.toMillis?.() > Date.now()) {
-          throw new Error('LOCK_ACQUIRED')
-        }
-      }
-      transaction.set(lockRef, {
-        locked: true,
-        expiresAt: Timestamp.fromMillis(Date.now() + LOCK_TIMEOUT_MS),
-      })
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-async function releaseLock(db: Firestore) {
-  await db.collection('locks').doc('keeper').set({ locked: false, expiresAt: Timestamp.fromMillis(0) })
-}
 
 async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
   for (let i = 0; i <= retries; i++) {
@@ -58,6 +28,7 @@ async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
 }
 
 async function offsetDebtForUser(userAddress: string): Promise<void> {
+  const { getDebt } = await import('@/lib/contract')
   const debt = await getDebt(userAddress)
   if (debt <= BigInt(0)) return
 
@@ -118,9 +89,54 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'CONTRACT_ID not configured' }, { status: 500 })
   }
 
-  const db = await getAdminDb()
+  const { runQuery, commit, getDocument } = await import('@/lib/firestore-rest')
 
-  const locked = await acquireLock(db)
+  const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || ''
+
+  async function acquireLock(): Promise<boolean> {
+    const lockPath = `locks/keeper`
+    try {
+      const existing = await getDocument(lockPath)
+      if (existing) {
+        const { fieldsToObject } = await import('@/lib/firestore-rest')
+        const data = fieldsToObject<{ locked?: boolean; expiresAt?: string }>(existing.fields as Record<string, unknown>)
+        if (data.locked && data.expiresAt && new Date(data.expiresAt).getTime() > Date.now()) {
+          return false
+        }
+      }
+
+      await commit([
+        {
+          update: {
+            name: `projects/${PROJECT_ID}/databases/(default)/documents/${lockPath}`,
+            fields: {
+              locked: { booleanValue: true },
+              expiresAt: { timestampValue: new Date(Date.now() + LOCK_TIMEOUT_MS).toISOString() },
+            },
+          },
+        },
+      ])
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function releaseLock() {
+    await commit([
+      {
+        update: {
+          name: `projects/${PROJECT_ID}/databases/(default)/documents/locks/keeper`,
+          fields: {
+            locked: { booleanValue: false },
+            expiresAt: { timestampValue: new Date(0).toISOString() },
+          },
+        },
+      },
+    ])
+  }
+
+  const locked = await acquireLock()
   if (!locked) {
     return NextResponse.json({ error: 'Another keeper run is in progress' }, { status: 409 })
   }
@@ -128,20 +144,21 @@ export async function GET(request: Request) {
   const summary: Record<string, unknown> = {}
 
   try {
-    const expiredSnapshot = await db
-      .collection('invoices')
-      .where('status', '==', 'pending')
-      .where('expiresAt', '<', Timestamp.now())
-      .get()
+    const expiredDocs = await runQuery('invoices', [
+      { field: 'status', op: 'EQUAL', value: 'pending' },
+      { field: 'expiresAt', op: 'LESS_THAN', value: new Date() },
+    ])
 
     let expiredCount = 0
-    if (expiredSnapshot.size > 0) {
-      const batch = db.batch()
-      expiredSnapshot.forEach((d: QueryDocumentSnapshot) => {
-        batch.update(d.ref, { status: 'expired' })
-        expiredCount++
-      })
-      await batch.commit()
+    if (expiredDocs.length > 0) {
+      const expiredWrites = expiredDocs.map((doc) => ({
+        update: {
+          name: doc.name,
+          fields: { status: { stringValue: 'expired' } },
+        },
+      }))
+      await commit(expiredWrites)
+      expiredCount = expiredDocs.length
     }
 
     summary.expiredInvoices = expiredCount
@@ -150,23 +167,24 @@ export async function GET(request: Request) {
   }
 
   try {
-    const paidSnapshot = await db
-      .collection('invoices')
-      .where('status', '==', 'paid')
-      .get()
+    const paidDocs = await runQuery('invoices', [
+      { field: 'status', op: 'EQUAL', value: 'paid' },
+    ])
+
+    const { fieldsToObject } = await import('@/lib/firestore-rest')
 
     const addressSet = new Set<string>()
-    paidSnapshot.forEach((d: QueryDocumentSnapshot) => {
-      const data = d.data() as { buyerAddress?: string }
+    for (const doc of paidDocs) {
+      const data = fieldsToObject<{ buyerAddress?: string }>(doc.fields as Record<string, unknown>)
       if (data.buyerAddress) addressSet.add(data.buyerAddress)
-    })
+    }
 
     const addresses = [...addressSet]
 
     if (!addresses.length) {
       summary.offsetStatus = 'idle'
       summary.offsetAddresses = 0
-      await releaseLock(db)
+      await releaseLock()
       return NextResponse.json(summary)
     }
 
@@ -199,6 +217,6 @@ export async function GET(request: Request) {
     summary.offsetError = err instanceof Error ? err.message : 'Unknown error'
   }
 
-  await releaseLock(db)
+  await releaseLock()
   return NextResponse.json(summary)
 }
