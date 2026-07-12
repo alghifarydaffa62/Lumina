@@ -1,8 +1,8 @@
 import { Contract, nativeToScVal, scValToNative, Account, TransactionBuilder, xdr } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
 
-const CONTRACT_ID = 'CD2BRE5VRAQSXWZ6NSKPUKKS7RBZC2VMWDKOQQBRFZEWZDGWQYFJPB7M'
-const RPC_URL = 'https://soroban-testnet.stellar.org'
+const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID || process.env.CONTRACT_ID || 'CD2BRE5VRAQSXWZ6NSKPUKKS7RBZC2VMWDKOQQBRFZEWZDGWQYFJPB7M'
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 
 type Signer = (xdr: string, options?: { networkPassphrase?: string }) => Promise<{ signedTxXdr: string }>
@@ -30,7 +30,11 @@ async function simulateRead(method: string, user: string): Promise<bigint> {
     throw new Error('Simulation failed or returned no result')
   }
 
-  return scValToNative(sim.result.retval) as bigint
+  const val = scValToNative(sim.result.retval)
+  if (typeof val !== 'bigint') {
+    throw new Error(`Expected bigint from ${method}, got ${typeof val}`)
+  }
+  return val
 }
 
 async function buildAndSend(

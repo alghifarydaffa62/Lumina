@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
+import { useFirebaseAuthContext } from '@/lib/firebase-auth-context'
 
 interface CreateInvoiceParams {
   buyerAddress: string
@@ -15,9 +16,14 @@ interface CreateInvoiceParams {
 
 export function useMerchantBilling() {
   const toast = useToast()
+  const { isAuthenticated } = useFirebaseAuthContext()
   const [saving, setSaving] = useState(false)
 
   const createInvoice = useCallback(async (params: CreateInvoiceParams) => {
+    if (!isAuthenticated) {
+      toast.error('Authentication in progress, please wait...')
+      return false
+    }
     setSaving(true)
     try {
       await addDoc(collection(db, 'invoices'), {
@@ -38,7 +44,7 @@ export function useMerchantBilling() {
     } finally {
       setSaving(false)
     }
-  }, [toast])
+  }, [toast, isAuthenticated])
 
   return { saving, createInvoice }
 }

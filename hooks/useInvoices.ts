@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useWallet } from '@/lib/app-wallet'
 import {
   collection,
@@ -16,6 +16,7 @@ import { db } from '@/lib/firebase'
 import { spend } from '@/lib/contract'
 import { toStroops } from '@/lib/amount'
 import { useToast } from '@/components/Toast'
+import { useFirebaseAuthContext } from '@/lib/firebase-auth-context'
 
 export interface Invoice {
   id: string
@@ -40,19 +41,22 @@ function extractIndexUrl(msg: string): string | null {
 
 export function useInvoices() {
   const { account } = useWallet()
+  const { isAuthenticated, authLoading } = useFirebaseAuthContext()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [indexUrl, setIndexUrl] = useState<string | null>(null)
 
-  const ready = !!account?.address
+  const ready = !!account?.address && isAuthenticated
 
   useEffect(() => {
-    if (!ready) return
+    if (!account?.address) return
+    if (authLoading) return
+    if (!isAuthenticated) return
 
     const q = query(
       collection(db, 'invoices'),
-      where('buyerAddress', '==', account!.address),
+      where('buyerAddress', '==', account.address),
       orderBy('createdAt', 'desc'),
     )
 
@@ -87,7 +91,7 @@ export function useInvoices() {
     )
 
     return () => unsub()
-  }, [ready, account])
+  }, [account, authLoading, isAuthenticated])
 
   return {
     invoices: ready ? invoices : [],
@@ -99,12 +103,17 @@ export function useInvoices() {
 
 export function usePayInvoice() {
   const { account, signTransaction } = useWallet()
+  const { isAuthenticated } = useFirebaseAuthContext()
   const toast = useToast()
   const [payingId, setPayingId] = useState<string | null>(null)
 
   const pay = useCallback(
     async (inv: Invoice) => {
       if (!account?.address || !signTransaction) return
+      if (!isAuthenticated) {
+        toast.error('Authentication in progress, please wait...')
+        return
+      }
 
       setPayingId(inv.id)
       try {
@@ -124,7 +133,7 @@ export function usePayInvoice() {
         setPayingId(null)
       }
     },
-    [account, signTransaction, toast],
+    [account, signTransaction, toast, isAuthenticated],
   )
 
   return { payingId, pay }

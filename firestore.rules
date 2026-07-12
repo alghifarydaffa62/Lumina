@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /invoices/{invoiceId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.buyerAddress ||
+        request.auth.uid == resource.data.merchantAddress
+      );
+      allow create: if request.auth != null &&
+        request.auth.uid == request.resource.data.merchantAddress;
+      allow update: if request.auth != null &&
+        request.auth.uid == resource.data.buyerAddress &&
+        request.resource.data.status == 'paid';
+      allow delete: if false;
+    }
+
+    match /merchants/{address} {
+      allow read: if request.auth != null && request.auth.uid == address;
+      allow write: if request.auth != null && request.auth.uid == address;
+    }
+
+    match /locks/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

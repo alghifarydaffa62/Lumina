@@ -46,6 +46,12 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {!error && debt === BigInt(0) && collateral > BigInt(0) && (
+        <div className="border border-forest/30 bg-forest/5 p-4 text-sm text-forest">
+          Debt fully repaid — your position is clear.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="border border-line bg-panel p-5 shadow-sm">
           <p className="font-mono text-[11px] tracking-widest2 uppercase text-ink-faint">Collateral</p>
@@ -73,7 +79,7 @@ export default function DashboardPage() {
 
       <div className="flex flex-1 flex-col items-start gap-6 md:flex-row">
         <div className="flex w-full flex-col items-center border border-line bg-panel p-6 shadow-sm md:w-auto">
-          <LtvGauge ratio={ltvHealthRatio} />
+          <LtvGauge ratio={ltvHealthRatio} paidOff={debt === BigInt(0) && collateral > BigInt(0)} />
         </div>
 
         <div className="flex flex-1 flex-col gap-4">

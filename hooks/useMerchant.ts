@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
+import { useFirebaseAuthContext } from '@/lib/firebase-auth-context'
 
 export function useMerchantDashboardAuth() {
   const { isConnected, isConnecting } = useWallet()
@@ -25,6 +26,7 @@ export interface MerchantData {
 
 export function useMerchantStore(address: string | undefined) {
   const toast = useToast()
+  const { isAuthenticated, authLoading } = useFirebaseAuthContext()
   const [store, setStore] = useState<MerchantData | null>(null)
   const [checking, setChecking] = useState(true)
   const [registered, setRegistered] = useState(false)
@@ -34,6 +36,9 @@ export function useMerchantStore(address: string | undefined) {
       startTransition(() => setChecking(false))
       return
     }
+
+    if (authLoading) return
+    if (!isAuthenticated) return
 
     let cancelled = false
 
@@ -58,7 +63,7 @@ export function useMerchantStore(address: string | undefined) {
       })
 
     return () => { cancelled = true }
-  }, [address, toast])
+  }, [address, toast, authLoading, isAuthenticated])
 
   const register = useCallback(async (storeName: string) => {
     if (!address) return

@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { WalletProvider, NetworkType } from 'stellar-wallet-kit'
 import type { ReactNode } from 'react'
+import { FirebaseAuthProvider } from '@/lib/firebase-auth-context'
 
 const SKIP_PATTERNS = [
   'Failed to connect to Freighter',
@@ -34,7 +35,9 @@ export default function Providers({ children }: { children: ReactNode }) {
         },
       }}
     >
-      {children}
+      <FirebaseAuthProvider>
+        {children}
+      </FirebaseAuthProvider>
     </WalletProvider>
   )
 }

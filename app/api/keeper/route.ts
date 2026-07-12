@@ -6,15 +6,63 @@ import {
   TransactionBuilder,
 } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
-import { collection, query, where, getDocs, writeBatch, doc, Timestamp } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { Timestamp } from 'firebase-admin/firestore'
+import type { DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore'
+import { adminDb } from '@/lib/firebase-admin'
+import { getDebt } from '@/lib/contract'
+import crypto from 'node:crypto'
 
 const CONTRACT_ID = process.env.CONTRACT_ID || ''
 const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 const YIELD_AMOUNT = BigInt('20000000')
+const LOCK_REF = adminDb.collection('locks').doc('keeper')
+const LOCK_TIMEOUT_MS = 10 * 60 * 1000
+
+async function acquireLock(): Promise<boolean> {
+  try {
+    await adminDb.runTransaction(async (transaction) => {
+      const snap = await transaction.get(LOCK_REF) as DocumentSnapshot
+      if (snap.exists) {
+        const d = snap.data()
+        if (d?.locked && d.expiresAt?.toMillis?.() > Date.now()) {
+          throw new Error('LOCK_ACQUIRED')
+        }
+      }
+      transaction.set(LOCK_REF, {
+        locked: true,
+        expiresAt: Timestamp.fromMillis(Date.now() + LOCK_TIMEOUT_MS),
+      })
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function releaseLock() {
+  await LOCK_REF.set({ locked: false, expiresAt: Timestamp.fromMillis(0) })
+}
+
+async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      await fn()
+      return
+    } catch (err) {
+      const isTransient = err instanceof Error && /bad_seq|tx_bad_seq|network|timeout|fetch/i.test(err.message)
+      if (!isTransient || i >= retries) throw err
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)))
+    }
+  }
+}
 
 async function offsetDebtForUser(userAddress: string): Promise<void> {
+  const debt = await getDebt(userAddress)
+  if (debt <= BigInt(0)) return
+
+  const amount = debt < YIELD_AMOUNT ? debt : YIELD_AMOUNT
+
   const server = new Server(RPC_URL)
   const adminKeypair = Keypair.fromSecret(process.env.ADMIN_SECRET_KEY!)
   const source = await server.getAccount(adminKeypair.publicKey())
@@ -22,7 +70,7 @@ async function offsetDebtForUser(userAddress: string): Promise<void> {
   const operation = new Contract(CONTRACT_ID).call(
     'offset_debt',
     nativeToScVal(userAddress, { type: 'address' }),
-    nativeToScVal(YIELD_AMOUNT, { type: 'i128' }),
+    nativeToScVal(amount, { type: 'i128' }),
   )
 
   const tx = new TransactionBuilder(source, {
@@ -52,30 +100,43 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization') || ''
   const cronSecret = process.env.CRON_SECRET
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const expected = `Bearer ${cronSecret}`
+  if (
+    authHeader.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
+  ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (!process.env.ADMIN_SECRET_KEY) {
     return NextResponse.json({ error: 'ADMIN_SECRET_KEY not configured' }, { status: 500 })
   }
+  if (!process.env.CONTRACT_ID) {
+    return NextResponse.json({ error: 'CONTRACT_ID not configured' }, { status: 500 })
+  }
+
+  const locked = await acquireLock()
+  if (!locked) {
+    return NextResponse.json({ error: 'Another keeper run is in progress' }, { status: 409 })
+  }
 
   const summary: Record<string, unknown> = {}
 
   try {
-    const expiredSnapshot = await getDocs(
-      query(
-        collection(db, 'invoices'),
-        where('status', '==', 'pending'),
-        where('expiresAt', '<', Timestamp.now()),
-      ),
-    )
+    const expiredSnapshot = await adminDb
+      .collection('invoices')
+      .where('status', '==', 'pending')
+      .where('expiresAt', '<', Timestamp.now())
+      .get()
 
     let expiredCount = 0
     if (expiredSnapshot.size > 0) {
-      const batch = writeBatch(db)
-      expiredSnapshot.forEach((d) => {
-        batch.update(doc(db, 'invoices', d.id), { status: 'expired' })
+      const batch = adminDb.batch()
+      expiredSnapshot.forEach((d: QueryDocumentSnapshot) => {
+        batch.update(d.ref, { status: 'expired' })
         expiredCount++
       })
       await batch.commit()
@@ -87,13 +148,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const paidSnapshot = await getDocs(
-      query(collection(db, 'invoices'), where('status', '==', 'paid')),
-    )
+    const paidSnapshot = await adminDb
+      .collection('invoices')
+      .where('status', '==', 'paid')
+      .get()
 
     const addressSet = new Set<string>()
-    paidSnapshot.forEach((doc) => {
-      const data = doc.data()
+    paidSnapshot.forEach((d: QueryDocumentSnapshot) => {
+      const data = d.data() as { buyerAddress?: string }
       if (data.buyerAddress) addressSet.add(data.buyerAddress)
     })
 
@@ -102,28 +164,39 @@ export async function GET(request: Request) {
     if (!addresses.length) {
       summary.offsetStatus = 'idle'
       summary.offsetAddresses = 0
+      await releaseLock()
       return NextResponse.json(summary)
     }
 
-    const results: { address: string; success: boolean; error?: string }[] = []
+    const settled = await Promise.allSettled(
+      addresses.map(async (address) => {
+        await withRetry(() => offsetDebtForUser(address))
+        return address
+      }),
+    )
 
-    for (const address of addresses) {
-      try {
-        await offsetDebtForUser(address)
-        results.push({ address, success: true })
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error'
-        results.push({ address, success: false, error: msg })
+    const succeeded: string[] = []
+    const failed: { address: string; error: string }[] = []
+
+    for (const result of settled) {
+      if (result.status === 'fulfilled') {
+        succeeded.push(result.value)
+      } else {
+        const idx = settled.indexOf(result)
+        const address = idx >= 0 ? addresses[idx] : 'unknown'
+        failed.push({ address, error: result.reason instanceof Error ? result.reason.message : 'Unknown error' })
       }
     }
 
     summary.offsetStatus = 'completed'
     summary.offsetAddresses = addresses.length
-    summary.offsetSucceeded = results.filter((r) => r.success).length
-    summary.offsetFailed = results.filter((r) => !r.success).length
+    summary.offsetSucceeded = succeeded.length
+    summary.offsetFailed = failed.length
+    if (failed.length) summary.offsetFailedDetails = failed
   } catch (err) {
     summary.offsetError = err instanceof Error ? err.message : 'Unknown error'
   }
 
+  await releaseLock()
   return NextResponse.json(summary)
 }

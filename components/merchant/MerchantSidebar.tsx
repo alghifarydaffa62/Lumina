@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useWallet } from '@/lib/app-wallet'
+import { useFirebaseAuthContext } from '@/lib/firebase-auth-context'
 import { Receipt, LogOut, Menu } from 'lucide-react'
 
 const menuItems = [
@@ -14,11 +15,13 @@ const menuItems = [
 export default function MerchantSidebar() {
   const pathname = usePathname()
   const { disconnect } = useWallet()
+  const { signOut } = useFirebaseAuthContext()
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
-  const handleLogout = () => {
-    disconnect()
+  const handleLogout = async () => {
+    await disconnect()
+    await signOut()
     router.push('/merchant')
   }
 
