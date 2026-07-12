@@ -8,7 +8,7 @@ import {
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
 import { Timestamp } from 'firebase-admin/firestore'
 import type { DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore'
-import { adminDb } from '@/lib/firebase-admin'
+import { getAdminDb } from '@/lib/firebase-admin'
 import { getDebt } from '@/lib/contract'
 import crypto from 'node:crypto'
 
@@ -16,20 +16,20 @@ const CONTRACT_ID = process.env.CONTRACT_ID || ''
 const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 const YIELD_AMOUNT = BigInt('20000000')
-const LOCK_REF = adminDb.collection('locks').doc('keeper')
 const LOCK_TIMEOUT_MS = 10 * 60 * 1000
+function getLockRef() { return getAdminDb().collection('locks').doc('keeper') }
 
 async function acquireLock(): Promise<boolean> {
   try {
-    await adminDb.runTransaction(async (transaction) => {
-      const snap = await transaction.get(LOCK_REF) as DocumentSnapshot
+    await getAdminDb().runTransaction(async (transaction) => {
+      const snap = await transaction.get(getLockRef()) as DocumentSnapshot
       if (snap.exists) {
         const d = snap.data()
         if (d?.locked && d.expiresAt?.toMillis?.() > Date.now()) {
           throw new Error('LOCK_ACQUIRED')
         }
       }
-      transaction.set(LOCK_REF, {
+      transaction.set(getLockRef(), {
         locked: true,
         expiresAt: Timestamp.fromMillis(Date.now() + LOCK_TIMEOUT_MS),
       })
@@ -41,7 +41,7 @@ async function acquireLock(): Promise<boolean> {
 }
 
 async function releaseLock() {
-  await LOCK_REF.set({ locked: false, expiresAt: Timestamp.fromMillis(0) })
+  await getLockRef().set({ locked: false, expiresAt: Timestamp.fromMillis(0) })
 }
 
 async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
   const summary: Record<string, unknown> = {}
 
   try {
-    const expiredSnapshot = await adminDb
+    const expiredSnapshot = await getAdminDb()
       .collection('invoices')
       .where('status', '==', 'pending')
       .where('expiresAt', '<', Timestamp.now())
@@ -134,7 +134,7 @@ export async function GET(request: Request) {
 
     let expiredCount = 0
     if (expiredSnapshot.size > 0) {
-      const batch = adminDb.batch()
+      const batch = getAdminDb().batch()
       expiredSnapshot.forEach((d: QueryDocumentSnapshot) => {
         batch.update(d.ref, { status: 'expired' })
         expiredCount++
@@ -148,7 +148,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const paidSnapshot = await adminDb
+    const paidSnapshot = await getAdminDb()
       .collection('invoices')
       .where('status', '==', 'paid')
       .get()
