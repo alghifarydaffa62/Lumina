@@ -26,7 +26,7 @@ export interface MerchantData {
 
 export function useMerchantStore(address: string | undefined) {
   const toast = useToast()
-  const { isAuthenticated, authLoading } = useFirebaseAuthContext()
+  const { isAuthenticated, authLoading, authError, authSettled } = useFirebaseAuthContext()
   const [store, setStore] = useState<MerchantData | null>(null)
   const [checking, setChecking] = useState(false)
   const [registered, setRegistered] = useState(false)
@@ -37,8 +37,21 @@ export function useMerchantStore(address: string | undefined) {
       return
     }
 
-    if (authLoading || !isAuthenticated) {
+    if (authLoading) {
       startTransition(() => setChecking(true))
+      return
+    }
+
+    if (!isAuthenticated && !authSettled) {
+      startTransition(() => setChecking(true))
+      return
+    }
+
+    if (!isAuthenticated && authSettled) {
+      if (authError) {
+        toast.error(`Authentication failed: ${authError}`)
+      }
+      startTransition(() => setChecking(false))
       return
     }
 
@@ -65,7 +78,7 @@ export function useMerchantStore(address: string | undefined) {
       })
 
     return () => { cancelled = true }
-  }, [address, toast, authLoading, isAuthenticated])
+  }, [address, toast, authLoading, isAuthenticated, authError, authSettled])
 
   const register = useCallback(async (storeName: string) => {
     if (!address) return

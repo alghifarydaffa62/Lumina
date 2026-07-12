@@ -13,6 +13,7 @@ export function useFirebaseAuth() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [authAttempted, setAuthAttempted] = useState(false)
   const authingRef = useRef(false)
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function useFirebaseAuth() {
     authingRef.current = true
     setAuthLoading(true)
     setAuthError(null)
+    setAuthAttempted(true)
 
     try {
       const { nonce, challenge } = await fetch('/api/firebase-auth').then((r) => r.json())
@@ -82,6 +84,7 @@ export function useFirebaseAuth() {
 
   const isAuthenticated = !!firebaseUser
   const uid = firebaseUser?.uid ?? null
+  const authSettled = authAttempted && !authLoading
 
-  return { isAuthenticated, uid, firebaseUser, authLoading, authError, authenticate, signOut }
+  return { isAuthenticated, uid, firebaseUser, authLoading, authError, authSettled, authenticate, signOut }
 }
