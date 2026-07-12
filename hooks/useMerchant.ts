@@ -28,7 +28,7 @@ export function useMerchantStore(address: string | undefined) {
   const toast = useToast()
   const { isAuthenticated, authLoading } = useFirebaseAuthContext()
   const [store, setStore] = useState<MerchantData | null>(null)
-  const [checking, setChecking] = useState(true)
+  const [checking, setChecking] = useState(false)
   const [registered, setRegistered] = useState(false)
 
   useEffect(() => {
@@ -37,8 +37,10 @@ export function useMerchantStore(address: string | undefined) {
       return
     }
 
-    if (authLoading) return
-    if (!isAuthenticated) return
+    if (authLoading || !isAuthenticated) {
+      startTransition(() => setChecking(true))
+      return
+    }
 
     let cancelled = false
 
