@@ -79,7 +79,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    const customToken = await getAdminAuth().createCustomToken(sourceAddress)
+    const auth = await getAdminAuth()
+    const customToken = await auth.createCustomToken(sourceAddress)
 
     return NextResponse.json({ token: customToken })
   } catch (err) {

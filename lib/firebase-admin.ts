@@ -1,13 +1,19 @@
-import admin from 'firebase-admin'
-import { getAuth } from 'firebase-admin/auth'
-import { getFirestore } from 'firebase-admin/firestore'
+import type { App } from 'firebase-admin'
+import type { Auth } from 'firebase-admin/auth'
+import type { Firestore } from 'firebase-admin/firestore'
 
-function getAdminApp() {
-  if (admin.getApps().length > 0) return admin.getApps()[0]
+type MaybeApp = App | undefined
+
+let app: MaybeApp
+
+async function getAdminApp(): Promise<App> {
+  if (app) return app
+
+  const admin = await import('firebase-admin')
 
   const projectId = process.env.FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error(
@@ -15,19 +21,23 @@ function getAdminApp() {
     )
   }
 
-  return admin.initializeApp({
-    credential: admin.cert({
-      projectId,
-      clientEmail,
-      privateKey: privateKey.replace(/\\n/g, '\n'),
-    }),
+  privateKey = privateKey
+    .replace(/\\n/g, '\n')
+    .replace(/^"(.*)"$/, '$1')
+
+  app = admin.initializeApp({
+    credential: admin.cert({ projectId, clientEmail, privateKey }),
   })
+
+  return app
 }
 
-export function getAdminAuth() {
-  return getAuth(getAdminApp())
+export async function getAdminAuth(): Promise<Auth> {
+  const { getAuth } = await import('firebase-admin/auth')
+  return getAuth(await getAdminApp())
 }
 
-export function getAdminDb() {
-  return getFirestore(getAdminApp())
+export async function getAdminDb(): Promise<Firestore> {
+  const { getFirestore } = await import('firebase-admin/firestore')
+  return getFirestore(await getAdminApp())
 }

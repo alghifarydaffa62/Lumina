@@ -7,7 +7,7 @@ import {
 } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
 import { Timestamp } from 'firebase-admin/firestore'
-import type { DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore'
+import type { DocumentSnapshot, QueryDocumentSnapshot, Firestore } from 'firebase-admin/firestore'
 import { getAdminDb } from '@/lib/firebase-admin'
 import { getDebt } from '@/lib/contract'
 import crypto from 'node:crypto'
@@ -17,19 +17,19 @@ const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 const YIELD_AMOUNT = BigInt('20000000')
 const LOCK_TIMEOUT_MS = 10 * 60 * 1000
-function getLockRef() { return getAdminDb().collection('locks').doc('keeper') }
 
-async function acquireLock(): Promise<boolean> {
+async function acquireLock(db: Firestore): Promise<boolean> {
+  const lockRef = db.collection('locks').doc('keeper')
   try {
-    await getAdminDb().runTransaction(async (transaction) => {
-      const snap = await transaction.get(getLockRef()) as DocumentSnapshot
+    await db.runTransaction(async (transaction) => {
+      const snap = await transaction.get(lockRef) as DocumentSnapshot
       if (snap.exists) {
         const d = snap.data()
         if (d?.locked && d.expiresAt?.toMillis?.() > Date.now()) {
           throw new Error('LOCK_ACQUIRED')
         }
       }
-      transaction.set(getLockRef(), {
+      transaction.set(lockRef, {
         locked: true,
         expiresAt: Timestamp.fromMillis(Date.now() + LOCK_TIMEOUT_MS),
       })
@@ -40,8 +40,8 @@ async function acquireLock(): Promise<boolean> {
   }
 }
 
-async function releaseLock() {
-  await getLockRef().set({ locked: false, expiresAt: Timestamp.fromMillis(0) })
+async function releaseLock(db: Firestore) {
+  await db.collection('locks').doc('keeper').set({ locked: false, expiresAt: Timestamp.fromMillis(0) })
 }
 
 async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
@@ -118,7 +118,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'CONTRACT_ID not configured' }, { status: 500 })
   }
 
-  const locked = await acquireLock()
+  const db = await getAdminDb()
+
+  const locked = await acquireLock(db)
   if (!locked) {
     return NextResponse.json({ error: 'Another keeper run is in progress' }, { status: 409 })
   }
@@ -126,7 +128,7 @@ export async function GET(request: Request) {
   const summary: Record<string, unknown> = {}
 
   try {
-    const expiredSnapshot = await getAdminDb()
+    const expiredSnapshot = await db
       .collection('invoices')
       .where('status', '==', 'pending')
       .where('expiresAt', '<', Timestamp.now())
@@ -134,7 +136,7 @@ export async function GET(request: Request) {
 
     let expiredCount = 0
     if (expiredSnapshot.size > 0) {
-      const batch = getAdminDb().batch()
+      const batch = db.batch()
       expiredSnapshot.forEach((d: QueryDocumentSnapshot) => {
         batch.update(d.ref, { status: 'expired' })
         expiredCount++
@@ -148,7 +150,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const paidSnapshot = await getAdminDb()
+    const paidSnapshot = await db
       .collection('invoices')
       .where('status', '==', 'paid')
       .get()
@@ -164,7 +166,7 @@ export async function GET(request: Request) {
     if (!addresses.length) {
       summary.offsetStatus = 'idle'
       summary.offsetAddresses = 0
-      await releaseLock()
+      await releaseLock(db)
       return NextResponse.json(summary)
     }
 
@@ -197,6 +199,6 @@ export async function GET(request: Request) {
     summary.offsetError = err instanceof Error ? err.message : 'Unknown error'
   }
 
-  await releaseLock()
+  await releaseLock(db)
   return NextResponse.json(summary)
 }
