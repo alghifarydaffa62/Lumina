@@ -3,7 +3,7 @@ import { Transaction, Keypair, Networks } from '@stellar/stellar-sdk'
 import { createFirebaseCustomToken } from '@/lib/firebase-admin'
 import crypto from 'node:crypto'
 
-const AUTH_SECRET = crypto.randomUUID()
+const AUTH_SECRET = process.env.AUTH_SECRET || crypto.randomUUID()
 const NONCE_TTL_MS = 120_000
 
 function createChallenge() {
