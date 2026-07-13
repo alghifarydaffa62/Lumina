@@ -14,11 +14,13 @@ export function useFirebaseAuth() {
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [authAttempted, setAuthAttempted] = useState(false)
+  const [authReady, setAuthReady] = useState(false)
   const authingRef = useRef(false)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user)
+      setAuthReady(true)
     })
     return () => unsub()
   }, [])
@@ -76,11 +78,11 @@ export function useFirebaseAuth() {
   }, [])
 
   useEffect(() => {
-    if (isConnected && account?.address && !firebaseUser && !authLoading && !authError) {
-      const id = setTimeout(() => authenticate(), 0)
-      return () => clearTimeout(id)
-    }
-  }, [isConnected, account?.address, firebaseUser, authLoading, authError, authenticate])
+    if (!isConnected || !account?.address || !authReady || firebaseUser || authLoading || authError) return
+
+    const id = setTimeout(() => authenticate(), 1000)
+    return () => clearTimeout(id)
+  }, [isConnected, account?.address, authReady, firebaseUser, authLoading, authError, authenticate])
 
   const isAuthenticated = !!firebaseUser
   const uid = firebaseUser?.uid ?? null
