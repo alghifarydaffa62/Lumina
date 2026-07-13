@@ -43,6 +43,10 @@ export function useTransactions() {
     if (authLoading) return
     if (!isAuthenticated) return
 
+    setLoading(true)
+    setError(null)
+    setIndexUrl(null)
+
     const q = query(
       collection(db, 'invoices'),
       where('buyerAddress', '==', account.address),
@@ -79,7 +83,7 @@ export function useTransactions() {
     )
 
     return () => unsub()
-  }, [account, authLoading, isAuthenticated])
+  }, [account?.address, authLoading, isAuthenticated])
 
   return {
     transactions: ready ? transactions : [],
