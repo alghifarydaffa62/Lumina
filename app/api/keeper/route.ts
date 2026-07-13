@@ -112,22 +112,19 @@ export async function GET(request: Request) {
     }
 
     try {
-      const paidDocs = await runQuery('invoices', [
-        { field: 'status', op: 'EQUAL', value: 'paid' },
-      ])
+      const allDocs = await runQuery('invoices', [])
 
-      const addressSet = new Set<string>()
-      const paidNames: string[] = []
-
-      for (const doc of paidDocs) {
-        const data = fieldsToObject<{ buyerAddress?: string }>(doc.fields as Record<string, unknown>)
-        if (data.buyerAddress) {
-          addressSet.add(data.buyerAddress)
-          paidNames.push(doc.name)
-        }
+      // Group invoices by buyerAddress, track which ones are still 'paid'
+      const addressToInvoices = new Map<string, { name: string; status: string }[]>()
+      for (const doc of allDocs) {
+        const data = fieldsToObject<{ buyerAddress?: string; status?: string }>(doc.fields as Record<string, unknown>)
+        if (!data.buyerAddress) continue
+        const list = addressToInvoices.get(data.buyerAddress) || []
+        list.push({ name: doc.name, status: data.status || '' })
+        addressToInvoices.set(data.buyerAddress, list)
       }
 
-      const addresses = [...addressSet]
+      const addresses = [...addressToInvoices.keys()]
 
       if (addresses.length === 0) {
         summary.offsetStatus = 'idle'
@@ -213,7 +210,30 @@ export async function GET(request: Request) {
               }
             }
 
-            if (txSuccess) offsetSucceeded++
+            if (txSuccess) {
+              offsetSucceeded++
+
+              // Mark this address's paid invoices as settled
+              const invoices = addressToInvoices.get(address) || []
+              const paidNames = invoices.filter((i) => i.status === 'paid').map((i) => i.name)
+              if (paidNames.length > 0) {
+                try {
+                  const writes = paidNames.map((name) => ({
+                    update: {
+                      name,
+                      fields: { status: { stringValue: 'settled' } },
+                    },
+                  }))
+                  await commit(writes)
+                  summary.settledInvoices = (summary.settledInvoices as number || 0) + paidNames.length
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : String(err)
+                  summary.settleError = summary.settleError
+                    ? `${summary.settleError}; ${msg}`
+                    : msg
+                }
+              }
+            }
           } catch (err) {
             offsetFailed++
             offsetErrors.push({ address, error: err instanceof Error ? err.message : String(err) })
@@ -225,21 +245,6 @@ export async function GET(request: Request) {
         summary.offsetSucceeded = offsetSucceeded
         summary.offsetFailed = offsetFailed
         if (offsetErrors.length) summary.offsetErrors = offsetErrors
-
-        if (offsetSucceeded > 0) {
-          try {
-            const writes = paidNames.map((name) => ({
-              update: {
-                name,
-                fields: { status: { stringValue: 'settled' } },
-              },
-            }))
-            await commit(writes)
-            summary.settledInvoices = paidNames.length
-          } catch (err) {
-            summary.settleError = err instanceof Error ? err.message : String(err)
-          }
-        }
       }
     } catch (err) {
       summary.offsetError = err instanceof Error ? err.message : String(err)
