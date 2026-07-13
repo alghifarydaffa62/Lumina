@@ -4,6 +4,7 @@ import {
   nativeToScVal,
   Keypair,
   TransactionBuilder,
+  Address,
 } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
 import crypto from 'node:crypto'
@@ -13,19 +14,6 @@ const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 const YIELD_AMOUNT = BigInt('20000000')
 const LOCK_TIMEOUT_MS = 10 * 60 * 1000
-
-async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      await fn()
-      return
-    } catch (err) {
-      const isTransient = err instanceof Error && /bad_seq|tx_bad_seq|network|timeout|fetch/i.test(err.message)
-      if (!isTransient || i >= retries) throw err
-      await new Promise((r) => setTimeout(r, 1000 * (i + 1)))
-    }
-  }
-}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization') || ''
@@ -49,65 +37,59 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'CONTRACT_ID not configured' }, { status: 500 })
   }
 
-  const { runQuery, commit, beginTransaction, rollbackTransaction } = await import('@/lib/firestore-rest')
+  const { runQuery, commit, getDocument, fieldsToObject } = await import('@/lib/firestore-rest')
 
   const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || ''
   const LOCK_PATH = 'locks/keeper'
+  const lockRef = `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`
 
-  async function releaseLock() {
-    await commit([
-      {
-        update: {
-          name: `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`,
-          fields: { locked: { booleanValue: false }, expiresAt: { timestampValue: new Date(0).toISOString() } },
-        },
-      },
-    ])
-  }
-
-  async function tryAcquireLock(): Promise<boolean> {
-    const txnId = await beginTransaction()
+  async function acquireLock(): Promise<boolean> {
     try {
-      const { getDocument, fieldsToObject } = await import('@/lib/firestore-rest')
-
       const existing = await getDocument(LOCK_PATH)
       if (existing) {
         const data = fieldsToObject<{ locked?: boolean; expiresAt?: string }>(existing.fields as Record<string, unknown>)
         if (data.locked && data.expiresAt && new Date(data.expiresAt).getTime() > Date.now()) {
-          await rollbackTransaction(txnId)
           return false
         }
       }
-
-      const docName = `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`
       await commit([
         {
           update: {
-            name: docName,
+            name: lockRef,
             fields: {
               locked: { booleanValue: true },
               expiresAt: { timestampValue: new Date(Date.now() + LOCK_TIMEOUT_MS).toISOString() },
             },
           },
         },
-      ], txnId)
+      ])
       return true
     } catch {
-      try { await rollbackTransaction(txnId) } catch {}
       return false
     }
   }
 
-  const locked = await tryAcquireLock()
-  if (!locked) {
-    return NextResponse.json({ error: 'Another keeper run is in progress' }, { status: 409 })
+  async function releaseLock() {
+    try {
+      await commit([
+        {
+          update: {
+            name: lockRef,
+            fields: { locked: { booleanValue: false }, expiresAt: { timestampValue: new Date(0).toISOString() } },
+          },
+        },
+      ])
+    } catch {}
   }
 
-  const summary: Record<string, unknown> = {}
+  const locked = await acquireLock()
+  const summary: Record<string, unknown> = { lockAcquired: locked }
+
+  if (!locked) {
+    return NextResponse.json(summary)
+  }
 
   try {
-    const { fieldsToObject } = await import('@/lib/firestore-rest')
-
     try {
       const expiredDocs = await runQuery('invoices', [
         { field: 'status', op: 'EQUAL', value: 'pending' },
@@ -172,7 +154,7 @@ export async function GET(request: Request) {
 
             const operation = new Contract(CONTRACT_ID).call(
               'offset_debt',
-              nativeToScVal(address, { type: 'address' }),
+              new Address(address).toScVal(),
               nativeToScVal(amount, { type: 'i128' }),
             )
 
@@ -230,7 +212,7 @@ export async function GET(request: Request) {
       summary.offsetError = err instanceof Error ? err.message : String(err)
     }
   } finally {
-    try { await releaseLock() } catch {}
+    await releaseLock()
   }
 
   return NextResponse.json(summary)
