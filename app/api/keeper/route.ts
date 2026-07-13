@@ -188,8 +188,15 @@ export async function GET(request: Request) {
                   throw new Error(errMsg)
                 }
 
+                if (sendResult.status === 'TRY_AGAIN_LATER') {
+                  throw new Error('TRY_AGAIN_LATER')
+                }
+
                 if (sendResult.status === 'PENDING' || sendResult.status === 'DUPLICATE') {
-                  await server.pollTransaction(sendResult.hash, { attempts: 15 })
+                  const pollResult = await server.pollTransaction(sendResult.hash, { attempts: 15 })
+                  if (pollResult.status === Api.GetTransactionStatus.FAILED) {
+                    throw new Error('Transaction failed on-chain')
+                  }
                 }
 
                 txSuccess = true
@@ -197,7 +204,11 @@ export async function GET(request: Request) {
               } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err)
                 const isSeqErr = /bad_seq|tx_bad_seq|sequence/i.test(msg)
-                if (isSeqErr && attempt < 2) continue
+                const isTryAgain = /try_again_later|timeout|network/i.test(msg)
+                if ((isSeqErr || isTryAgain) && attempt < 2) {
+                  await new Promise((r) => setTimeout(r, 1000))
+                  continue
+                }
                 throw err
               }
             }
