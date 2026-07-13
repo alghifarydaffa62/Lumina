@@ -59,7 +59,7 @@ export function useTransactions() {
         const list: Transaction[] = []
         snapshot.forEach((d) => {
           const data = d.data()
-          if (data.status !== 'paid' && data.status !== 'expired') return
+          if (data.status !== 'paid' && data.status !== 'expired' && data.status !== 'settled') return
           list.push({
             id: d.id,
             merchantName: data.merchantName || '',
