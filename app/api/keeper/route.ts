@@ -148,39 +148,61 @@ export async function GET(request: Request) {
 
             const amount = debt < YIELD_AMOUNT ? debt : YIELD_AMOUNT
 
-            const server = new Server(RPC_URL)
             const adminKeypair = Keypair.fromSecret(process.env.ADMIN_SECRET_KEY!)
-            const source = await server.getAccount(adminKeypair.publicKey())
 
-            const operation = new Contract(CONTRACT_ID).call(
-              'offset_debt',
-              new Address(address).toScVal(),
-              nativeToScVal(amount, { type: 'i128' }),
-            )
+            let txSuccess = false
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                const server = new Server(RPC_URL)
+                const source = await server.getAccount(adminKeypair.publicKey())
 
-            const tx = new TransactionBuilder(source, {
-              fee: '100',
-              networkPassphrase: NETWORK_PASSPHRASE,
-            })
-              .addOperation(operation)
-              .setTimeout(30)
-              .build()
+                const operation = new Contract(CONTRACT_ID).call(
+                  'offset_debt',
+                  new Address(address).toScVal(),
+                  nativeToScVal(amount, { type: 'i128' }),
+                )
 
-            const sim = await server.simulateTransaction(tx)
-            if (!Api.isSimulationSuccess(sim)) {
-              const errMsg = 'error' in sim ? sim.error : 'Simulation failed'
-              throw new Error(errMsg)
+                const tx = new TransactionBuilder(source, {
+                  fee: '100',
+                  networkPassphrase: NETWORK_PASSPHRASE,
+                })
+                  .addOperation(operation)
+                  .setTimeout(30)
+                  .build()
+
+                const sim = await server.simulateTransaction(tx)
+                if (!Api.isSimulationSuccess(sim)) {
+                  const errMsg = 'error' in sim ? sim.error : 'Simulation failed'
+                  throw new Error(errMsg)
+                }
+
+                const prepared = await server.prepareTransaction(tx)
+                prepared.sign(adminKeypair)
+
+                const sendResult = await server.sendTransaction(prepared)
+
+                if (sendResult.status === 'ERROR') {
+                  const errMsg = sendResult.errorResult
+                    ? String(sendResult.errorResult.result().switch().name)
+                    : 'Transaction rejected'
+                  throw new Error(errMsg)
+                }
+
+                if (sendResult.status === 'PENDING' || sendResult.status === 'DUPLICATE') {
+                  await server.pollTransaction(sendResult.hash, { attempts: 15 })
+                }
+
+                txSuccess = true
+                break
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err)
+                const isSeqErr = /bad_seq|tx_bad_seq|sequence/i.test(msg)
+                if (isSeqErr && attempt < 2) continue
+                throw err
+              }
             }
 
-            const prepared = await server.prepareTransaction(tx)
-            prepared.sign(adminKeypair)
-
-            const result = await server.sendTransaction(prepared)
-            if (result.status === 'PENDING' || result.status === 'DUPLICATE') {
-              await server.pollTransaction(result.hash, { attempts: 15 })
-            }
-
-            offsetSucceeded++
+            if (txSuccess) offsetSucceeded++
           } catch (err) {
             offsetFailed++
             offsetErrors.push({ address, error: err instanceof Error ? err.message : String(err) })
