@@ -27,46 +27,6 @@ async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
   }
 }
 
-async function offsetDebtForUser(userAddress: string): Promise<void> {
-  const { getDebt } = await import('@/lib/contract')
-  const debt = await getDebt(userAddress)
-  if (debt <= BigInt(0)) return
-
-  const amount = debt < YIELD_AMOUNT ? debt : YIELD_AMOUNT
-
-  const server = new Server(RPC_URL)
-  const adminKeypair = Keypair.fromSecret(process.env.ADMIN_SECRET_KEY!)
-  const source = await server.getAccount(adminKeypair.publicKey())
-
-  const operation = new Contract(CONTRACT_ID).call(
-    'offset_debt',
-    nativeToScVal(userAddress, { type: 'address' }),
-    nativeToScVal(amount, { type: 'i128' }),
-  )
-
-  const tx = new TransactionBuilder(source, {
-    fee: '100',
-    networkPassphrase: NETWORK_PASSPHRASE,
-  })
-    .addOperation(operation)
-    .setTimeout(30)
-    .build()
-
-  const sim = await server.simulateTransaction(tx)
-  if (!Api.isSimulationSuccess(sim)) {
-    const errMsg = 'error' in sim ? sim.error : 'Simulation failed'
-    throw new Error(errMsg)
-  }
-
-  const prepared = await server.prepareTransaction(tx)
-  prepared.sign(adminKeypair)
-
-  const result = await server.sendTransaction(prepared)
-  if (result.status === 'PENDING' || result.status === 'DUPLICATE') {
-    await server.pollTransaction(result.hash, { attempts: 15 })
-  }
-}
-
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization') || ''
   const cronSecret = process.env.CRON_SECRET
@@ -89,54 +49,56 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'CONTRACT_ID not configured' }, { status: 500 })
   }
 
-  const { runQuery, commit, getDocument } = await import('@/lib/firestore-rest')
+  const { runQuery, commit, beginTransaction, rollbackTransaction } = await import('@/lib/firestore-rest')
 
   const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || ''
+  const LOCK_PATH = 'locks/keeper'
 
-  async function acquireLock(): Promise<boolean> {
-    const lockPath = `locks/keeper`
+  async function releaseLock() {
+    await commit([
+      {
+        update: {
+          name: `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`,
+          fields: { locked: { booleanValue: false }, expiresAt: { timestampValue: new Date(0).toISOString() } },
+        },
+      },
+    ])
+  }
+
+  async function tryAcquireLock(): Promise<boolean> {
+    const txnId = await beginTransaction()
     try {
-      const existing = await getDocument(lockPath)
+      const { getDocument, fieldsToObject } = await import('@/lib/firestore-rest')
+
+      const existing = await getDocument(LOCK_PATH)
       if (existing) {
-        const { fieldsToObject } = await import('@/lib/firestore-rest')
         const data = fieldsToObject<{ locked?: boolean; expiresAt?: string }>(existing.fields as Record<string, unknown>)
         if (data.locked && data.expiresAt && new Date(data.expiresAt).getTime() > Date.now()) {
+          await rollbackTransaction(txnId)
           return false
         }
       }
 
+      const docName = `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`
       await commit([
         {
           update: {
-            name: `projects/${PROJECT_ID}/databases/(default)/documents/${lockPath}`,
+            name: docName,
             fields: {
               locked: { booleanValue: true },
               expiresAt: { timestampValue: new Date(Date.now() + LOCK_TIMEOUT_MS).toISOString() },
             },
           },
         },
-      ])
+      ], txnId)
       return true
     } catch {
+      try { await rollbackTransaction(txnId) } catch {}
       return false
     }
   }
 
-  async function releaseLock() {
-    await commit([
-      {
-        update: {
-          name: `projects/${PROJECT_ID}/databases/(default)/documents/locks/keeper`,
-          fields: {
-            locked: { booleanValue: false },
-            expiresAt: { timestampValue: new Date(0).toISOString() },
-          },
-        },
-      },
-    ])
-  }
-
-  const locked = await acquireLock()
+  const locked = await tryAcquireLock()
   if (!locked) {
     return NextResponse.json({ error: 'Another keeper run is in progress' }, { status: 409 })
   }
@@ -144,79 +106,132 @@ export async function GET(request: Request) {
   const summary: Record<string, unknown> = {}
 
   try {
-    const expiredDocs = await runQuery('invoices', [
-      { field: 'status', op: 'EQUAL', value: 'pending' },
-      { field: 'expiresAt', op: 'LESS_THAN', value: new Date() },
-    ])
-
-    let expiredCount = 0
-    if (expiredDocs.length > 0) {
-      const expiredWrites = expiredDocs.map((doc) => ({
-        update: {
-          name: doc.name,
-          fields: { status: { stringValue: 'expired' } },
-        },
-      }))
-      await commit(expiredWrites)
-      expiredCount = expiredDocs.length
-    }
-
-    summary.expiredInvoices = expiredCount
-  } catch (err) {
-    summary.expireError = err instanceof Error ? err.message : 'Unknown error'
-  }
-
-  try {
-    const paidDocs = await runQuery('invoices', [
-      { field: 'status', op: 'EQUAL', value: 'paid' },
-    ])
-
     const { fieldsToObject } = await import('@/lib/firestore-rest')
 
-    const addressSet = new Set<string>()
-    for (const doc of paidDocs) {
-      const data = fieldsToObject<{ buyerAddress?: string }>(doc.fields as Record<string, unknown>)
-      if (data.buyerAddress) addressSet.add(data.buyerAddress)
-    }
+    try {
+      const expiredDocs = await runQuery('invoices', [
+        { field: 'status', op: 'EQUAL', value: 'pending' },
+        { field: 'expiresAt', op: 'LESS_THAN', value: new Date() },
+      ])
 
-    const addresses = [...addressSet]
-
-    if (!addresses.length) {
-      summary.offsetStatus = 'idle'
-      summary.offsetAddresses = 0
-      await releaseLock()
-      return NextResponse.json(summary)
-    }
-
-    const settled = await Promise.allSettled(
-      addresses.map(async (address) => {
-        await withRetry(() => offsetDebtForUser(address))
-        return address
-      }),
-    )
-
-    const succeeded: string[] = []
-    const failed: { address: string; error: string }[] = []
-
-    for (const result of settled) {
-      if (result.status === 'fulfilled') {
-        succeeded.push(result.value)
-      } else {
-        const idx = settled.indexOf(result)
-        const address = idx >= 0 ? addresses[idx] : 'unknown'
-        failed.push({ address, error: result.reason instanceof Error ? result.reason.message : 'Unknown error' })
+      if (expiredDocs.length > 0) {
+        const writes = expiredDocs.map((doc) => ({
+          update: {
+            name: doc.name,
+            fields: { status: { stringValue: 'expired' } },
+          },
+        }))
+        await commit(writes)
       }
+
+      summary.expiredInvoices = expiredDocs.length
+    } catch (err) {
+      summary.expireError = err instanceof Error ? err.message : String(err)
     }
 
-    summary.offsetStatus = 'completed'
-    summary.offsetAddresses = addresses.length
-    summary.offsetSucceeded = succeeded.length
-    summary.offsetFailed = failed.length
-    if (failed.length) summary.offsetFailedDetails = failed
-  } catch (err) {
-    summary.offsetError = err instanceof Error ? err.message : 'Unknown error'
+    try {
+      const paidDocs = await runQuery('invoices', [
+        { field: 'status', op: 'EQUAL', value: 'paid' },
+      ])
+
+      const addressSet = new Set<string>()
+      const paidNames: string[] = []
+
+      for (const doc of paidDocs) {
+        const data = fieldsToObject<{ buyerAddress?: string }>(doc.fields as Record<string, unknown>)
+        if (data.buyerAddress) {
+          addressSet.add(data.buyerAddress)
+          paidNames.push(doc.name)
+        }
+      }
+
+      const addresses = [...addressSet]
+
+      if (addresses.length === 0) {
+        summary.offsetStatus = 'idle'
+        summary.offsetAddresses = 0
+      } else {
+        let offsetSucceeded = 0
+        let offsetFailed = 0
+        const offsetErrors: { address: string; error: string }[] = []
+
+        for (const address of addresses) {
+          try {
+            const { getDebt } = await import('@/lib/contract')
+            const debt = await getDebt(address)
+            if (debt <= BigInt(0)) {
+              offsetSucceeded++
+              continue
+            }
+
+            const amount = debt < YIELD_AMOUNT ? debt : YIELD_AMOUNT
+
+            const server = new Server(RPC_URL)
+            const adminKeypair = Keypair.fromSecret(process.env.ADMIN_SECRET_KEY!)
+            const source = await server.getAccount(adminKeypair.publicKey())
+
+            const operation = new Contract(CONTRACT_ID).call(
+              'offset_debt',
+              nativeToScVal(address, { type: 'address' }),
+              nativeToScVal(amount, { type: 'i128' }),
+            )
+
+            const tx = new TransactionBuilder(source, {
+              fee: '100',
+              networkPassphrase: NETWORK_PASSPHRASE,
+            })
+              .addOperation(operation)
+              .setTimeout(30)
+              .build()
+
+            const sim = await server.simulateTransaction(tx)
+            if (!Api.isSimulationSuccess(sim)) {
+              const errMsg = 'error' in sim ? sim.error : 'Simulation failed'
+              throw new Error(errMsg)
+            }
+
+            const prepared = await server.prepareTransaction(tx)
+            prepared.sign(adminKeypair)
+
+            const result = await server.sendTransaction(prepared)
+            if (result.status === 'PENDING' || result.status === 'DUPLICATE') {
+              await server.pollTransaction(result.hash, { attempts: 15 })
+            }
+
+            offsetSucceeded++
+          } catch (err) {
+            offsetFailed++
+            offsetErrors.push({ address, error: err instanceof Error ? err.message : String(err) })
+          }
+        }
+
+        summary.offsetStatus = 'completed'
+        summary.offsetAddresses = addresses.length
+        summary.offsetSucceeded = offsetSucceeded
+        summary.offsetFailed = offsetFailed
+        if (offsetErrors.length) summary.offsetErrors = offsetErrors
+
+        if (offsetSucceeded > 0) {
+          try {
+            const writes = paidNames.map((name) => ({
+              update: {
+                name,
+                fields: { status: { stringValue: 'settled' } },
+              },
+            }))
+            await commit(writes)
+            summary.settledInvoices = paidNames.length
+          } catch (err) {
+            summary.settleError = err instanceof Error ? err.message : String(err)
+          }
+        }
+      }
+    } catch (err) {
+      summary.offsetError = err instanceof Error ? err.message : String(err)
+    }
+  } finally {
+    try { await releaseLock() } catch {}
   }
 
-  await releaseLock()
   return NextResponse.json(summary)
 }
