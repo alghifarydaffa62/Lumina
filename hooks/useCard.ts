@@ -35,6 +35,7 @@ export function useCardBalances() {
   useEffect(() => {
     if (!account) return
     let cancelled = false
+    let poll = false
 
     const load = async () => {
       try {
@@ -47,7 +48,7 @@ export function useCardBalances() {
           setDebt(d)
         }
       } catch (err) {
-        if (!cancelled) {
+        if (!cancelled && !poll) {
           toast.error(err instanceof Error ? err.message : 'Failed to fetch balances')
         }
       } finally {
@@ -56,7 +57,14 @@ export function useCardBalances() {
     }
 
     load()
-    return () => { cancelled = true }
+    const interval = setInterval(() => {
+      poll = true
+      load()
+    }, 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [account, toast, fetchKey])
 
   const maxDebt = collateral * BigInt(LTV_LIMIT) / BigInt(100)
