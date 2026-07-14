@@ -19,6 +19,14 @@ export async function GET(request: Request) {
   const report: Record<string, any> = {}
 
   // 1. Env vars check
+  let saProjectId = '(unable to parse)'
+  try {
+    const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64
+    if (b64) {
+      const parsed = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'))
+      saProjectId = parsed.project_id || '(not in service account)'
+    }
+  } catch {}
   report.env = {
     CONTRACT_ID_set: !!process.env.CONTRACT_ID,
     NEXT_PUBLIC_CONTRACT_ID_set: !!process.env.NEXT_PUBLIC_CONTRACT_ID,
@@ -29,6 +37,8 @@ export async function GET(request: Request) {
     serviceAccountB64Set: !!process.env.FIREBASE_SERVICE_ACCOUNT_B64,
     CONTRACT_ID_value: process.env.CONTRACT_ID || '(not set)',
     NEXT_PUBLIC_CONTRACT_ID_value: process.env.NEXT_PUBLIC_CONTRACT_ID || '(not set)',
+    FIREBASE_PROJECT_ID_value: process.env.FIREBASE_PROJECT_ID || '(not set)',
+    SERVICE_ACCOUNT_PROJECT_ID: saProjectId,
   }
 
   // 2. Firestore test
