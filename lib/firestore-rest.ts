@@ -56,7 +56,7 @@ export async function getDocument(path: string) {
   return data as { name: string; fields: Record<string, unknown>; createTime: string; updateTime: string }
 }
 
-export async function commit(writes: { update?: { name: string; fields: Record<string, unknown> } }[]) {
+export async function commit(writes: ({ update?: { name: string; fields: Record<string, unknown> }; delete?: string; updateMask?: { fieldPaths: string[] } })[]) {
   const res = await fetch(`${BASE}:commit`, {
     method: 'POST',
     headers: await headers(),

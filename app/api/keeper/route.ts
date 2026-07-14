@@ -90,6 +90,22 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Cleanup: delete corrupted invoices (status-only docs from old keeper bug)
+    try {
+      const allForCleanup = await runQuery('invoices', [])
+      const corrupted = allForCleanup.filter((doc) => {
+        const data = fieldsToObject(doc.fields as Record<string, unknown>) as Record<string, unknown>
+        return data.status && !data.buyerAddress && !data.merchantAddress
+      })
+      if (corrupted.length > 0) {
+        const deletes = corrupted.map((doc) => ({ delete: doc.name }))
+        await commit(deletes)
+      }
+      summary.cleanupDeleted = corrupted.length
+    } catch (err) {
+      summary.cleanupError = err instanceof Error ? err.message : String(err)
+    }
+
     try {
       const expiredDocs = await runQuery('invoices', [
         { field: 'status', op: 'EQUAL', value: 'pending' },
@@ -102,6 +118,7 @@ export async function GET(request: Request) {
             name: doc.name,
             fields: { status: { stringValue: 'expired' } },
           },
+          updateMask: { fieldPaths: ['status'] },
         }))
         await commit(writes)
       }
@@ -223,6 +240,7 @@ export async function GET(request: Request) {
                       name,
                       fields: { status: { stringValue: 'settled' } },
                     },
+                    updateMask: { fieldPaths: ['status'] },
                   }))
                   await commit(writes)
                   summary.settledInvoices = (summary.settledInvoices as number || 0) + paidNames.length
