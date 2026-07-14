@@ -19,6 +19,14 @@ export async function GET(request: Request) {
   const report: Record<string, any> = {}
 
   // 1. Env vars check
+  let saProjectId = '(unable to parse)'
+  try {
+    const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64
+    if (b64) {
+      const parsed = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'))
+      saProjectId = parsed.project_id || '(not in service account)'
+    }
+  } catch {}
   report.env = {
     CONTRACT_ID_set: !!process.env.CONTRACT_ID,
     NEXT_PUBLIC_CONTRACT_ID_set: !!process.env.NEXT_PUBLIC_CONTRACT_ID,
@@ -29,6 +37,8 @@ export async function GET(request: Request) {
     serviceAccountB64Set: !!process.env.FIREBASE_SERVICE_ACCOUNT_B64,
     CONTRACT_ID_value: process.env.CONTRACT_ID || '(not set)',
     NEXT_PUBLIC_CONTRACT_ID_value: process.env.NEXT_PUBLIC_CONTRACT_ID || '(not set)',
+    FIREBASE_PROJECT_ID_value: process.env.FIREBASE_PROJECT_ID || '(not set)',
+    SERVICE_ACCOUNT_PROJECT_ID: saProjectId,
   }
 
   // 2. Firestore test
@@ -71,16 +81,35 @@ export async function GET(request: Request) {
       report.firestore.lock = err instanceof Error ? err.message : String(err)
     }
 
-    // Invoice counts
+    // Invoice breakdown
     try {
       const allDocs = await runQuery('invoices', [])
       const counts: Record<string, number> = {}
+      const byAddress: Record<string, { count: number; statuses: string[]; sampleId: string }> = {}
       for (const d of allDocs) {
-        const data = fieldsToObject<{ status?: string }>(d.fields as Record<string, unknown>)
+        const data = fieldsToObject<{ status?: string; buyerAddress?: string; merchantAddress?: string }>(d.fields as Record<string, unknown>)
         const s = data.status || 'unknown'
         counts[s] = (counts[s] || 0) + 1
+
+        const addr = data.buyerAddress || `merchant:${data.merchantAddress || 'unknown'}`
+        if (!byAddress[addr]) byAddress[addr] = { count: 0, statuses: [], sampleId: d.name.split('/').pop() || '' }
+        byAddress[addr].count++
+        if (!byAddress[addr].statuses.includes(s)) byAddress[addr].statuses.push(s)
+
+        // Limit to 20 docs to avoid huge response
+        if (allDocs.length <= 20) {
+          const shortName = d.name.split('/').pop() || ''
+          if (!report.firestore.invoiceSamples) report.firestore.invoiceSamples = []
+          ;(report.firestore.invoiceSamples as any[]).push({
+            id: shortName,
+            status: s,
+            buyerAddress: data.buyerAddress || '(not set)',
+            merchantAddress: data.merchantAddress || '(not set)',
+          })
+        }
       }
       report.firestore.invoiceCounts = counts
+      report.firestore.invoiceByAddress = byAddress
     } catch (err) {
       report.firestore.invoiceCounts = err instanceof Error ? err.message : String(err)
     }
