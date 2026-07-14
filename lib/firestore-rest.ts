@@ -56,42 +56,16 @@ export async function getDocument(path: string) {
   return data as { name: string; fields: Record<string, unknown>; createTime: string; updateTime: string }
 }
 
-export async function commit(
-  writes: { update?: { name: string; fields: Record<string, unknown> } }[],
-  transactionId?: string,
-) {
-  const body: Record<string, unknown> = { writes }
-  if (transactionId) body.transaction = transactionId
-
+export async function commit(writes: ({ update?: { name: string; fields: Record<string, unknown> }; delete?: string; updateMask?: { fieldPaths: string[] } })[]) {
   const res = await fetch(`${BASE}:commit`, {
     method: 'POST',
     headers: await headers(),
-    body: JSON.stringify(body),
+    body: JSON.stringify({ writes }),
   })
 
   const data = await res.json()
   if (!res.ok) throw new Error(`Firestore commit failed: ${data.error?.message || JSON.stringify(data)}`)
   return data
-}
-
-export async function beginTransaction(): Promise<string> {
-  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:beginTransaction`, {
-    method: 'POST',
-    headers: await headers(),
-    body: JSON.stringify({}),
-  })
-
-  const data = await res.json() as { transaction?: string; error?: { message?: string } }
-  if (!res.ok || !data.transaction) throw new Error(`Firestore beginTransaction failed: ${data.error?.message || JSON.stringify(data)}`)
-  return data.transaction
-}
-
-export async function rollbackTransaction(transactionId: string) {
-  await fetch(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:rollback`, {
-    method: 'POST',
-    headers: await headers(),
-    body: JSON.stringify({ transaction: transactionId }),
-  })
 }
 
 function toValue(val: unknown): Record<string, unknown> {

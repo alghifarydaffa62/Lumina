@@ -9,6 +9,7 @@ interface FirebaseAuthContextValue {
   authLoading: boolean
   authError: string | null
   authSettled: boolean
+  authenticate: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -18,13 +19,14 @@ const FirebaseAuthContext = createContext<FirebaseAuthContextValue>({
   authLoading: false,
   authError: null,
   authSettled: false,
+  authenticate: async () => {},
   signOut: async () => {},
 })
 
 export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated, uid, authLoading, authError, authSettled, signOut } = useFirebaseAuth()
+  const { isAuthenticated, uid, authLoading, authError, authSettled, authenticate, signOut } = useFirebaseAuth()
   return (
-    <FirebaseAuthContext.Provider value={{ isAuthenticated, uid, authLoading, authError, authSettled, signOut }}>
+    <FirebaseAuthContext.Provider value={{ isAuthenticated, uid, authLoading, authError, authSettled, authenticate, signOut }}>
       {children}
     </FirebaseAuthContext.Provider>
   )

@@ -4,6 +4,7 @@ import {
   nativeToScVal,
   Keypair,
   TransactionBuilder,
+  Address,
 } from '@stellar/stellar-sdk'
 import { Server, Api } from '@stellar/stellar-sdk/rpc'
 import crypto from 'node:crypto'
@@ -13,19 +14,6 @@ const RPC_URL = 'https://soroban-testnet.stellar.org'
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
 const YIELD_AMOUNT = BigInt('20000000')
 const LOCK_TIMEOUT_MS = 10 * 60 * 1000
-
-async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      await fn()
-      return
-    } catch (err) {
-      const isTransient = err instanceof Error && /bad_seq|tx_bad_seq|network|timeout|fetch/i.test(err.message)
-      if (!isTransient || i >= retries) throw err
-      await new Promise((r) => setTimeout(r, 1000 * (i + 1)))
-    }
-  }
-}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization') || ''
@@ -49,64 +37,74 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'CONTRACT_ID not configured' }, { status: 500 })
   }
 
-  const { runQuery, commit, beginTransaction, rollbackTransaction } = await import('@/lib/firestore-rest')
+  const { runQuery, commit, getDocument, fieldsToObject } = await import('@/lib/firestore-rest')
 
   const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || ''
   const LOCK_PATH = 'locks/keeper'
+  const lockRef = `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`
 
-  async function releaseLock() {
-    await commit([
-      {
-        update: {
-          name: `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`,
-          fields: { locked: { booleanValue: false }, expiresAt: { timestampValue: new Date(0).toISOString() } },
-        },
-      },
-    ])
-  }
-
-  async function tryAcquireLock(): Promise<boolean> {
-    const txnId = await beginTransaction()
+  async function acquireLock(): Promise<boolean> {
     try {
-      const { getDocument, fieldsToObject } = await import('@/lib/firestore-rest')
-
       const existing = await getDocument(LOCK_PATH)
       if (existing) {
         const data = fieldsToObject<{ locked?: boolean; expiresAt?: string }>(existing.fields as Record<string, unknown>)
         if (data.locked && data.expiresAt && new Date(data.expiresAt).getTime() > Date.now()) {
-          await rollbackTransaction(txnId)
           return false
         }
       }
-
-      const docName = `projects/${PROJECT_ID}/databases/(default)/documents/${LOCK_PATH}`
       await commit([
         {
           update: {
-            name: docName,
+            name: lockRef,
             fields: {
               locked: { booleanValue: true },
               expiresAt: { timestampValue: new Date(Date.now() + LOCK_TIMEOUT_MS).toISOString() },
             },
           },
         },
-      ], txnId)
+      ])
       return true
     } catch {
-      try { await rollbackTransaction(txnId) } catch {}
       return false
     }
   }
 
-  const locked = await tryAcquireLock()
-  if (!locked) {
-    return NextResponse.json({ error: 'Another keeper run is in progress' }, { status: 409 })
+  async function releaseLock() {
+    try {
+      await commit([
+        {
+          update: {
+            name: lockRef,
+            fields: { locked: { booleanValue: false }, expiresAt: { timestampValue: new Date(0).toISOString() } },
+          },
+        },
+      ])
+    } catch {}
   }
 
-  const summary: Record<string, unknown> = {}
+  const locked = await acquireLock()
+  const summary: Record<string, unknown> = { lockAcquired: locked }
+
+  if (!locked) {
+    return NextResponse.json(summary)
+  }
 
   try {
-    const { fieldsToObject } = await import('@/lib/firestore-rest')
+    // Cleanup: delete corrupted invoices (status-only docs from old keeper bug)
+    try {
+      const allForCleanup = await runQuery('invoices', [])
+      const corrupted = allForCleanup.filter((doc) => {
+        const data = fieldsToObject(doc.fields as Record<string, unknown>) as Record<string, unknown>
+        return data.status && !data.buyerAddress && !data.merchantAddress
+      })
+      if (corrupted.length > 0) {
+        const deletes = corrupted.map((doc) => ({ delete: doc.name }))
+        await commit(deletes)
+      }
+      summary.cleanupDeleted = corrupted.length
+    } catch (err) {
+      summary.cleanupError = err instanceof Error ? err.message : String(err)
+    }
 
     try {
       const expiredDocs = await runQuery('invoices', [
@@ -120,6 +118,7 @@ export async function GET(request: Request) {
             name: doc.name,
             fields: { status: { stringValue: 'expired' } },
           },
+          updateMask: { fieldPaths: ['status'] },
         }))
         await commit(writes)
       }
@@ -130,22 +129,19 @@ export async function GET(request: Request) {
     }
 
     try {
-      const paidDocs = await runQuery('invoices', [
-        { field: 'status', op: 'EQUAL', value: 'paid' },
-      ])
+      const allDocs = await runQuery('invoices', [])
 
-      const addressSet = new Set<string>()
-      const paidNames: string[] = []
-
-      for (const doc of paidDocs) {
-        const data = fieldsToObject<{ buyerAddress?: string }>(doc.fields as Record<string, unknown>)
-        if (data.buyerAddress) {
-          addressSet.add(data.buyerAddress)
-          paidNames.push(doc.name)
-        }
+      // Group invoices by buyerAddress, track which ones are still 'paid'
+      const addressToInvoices = new Map<string, { name: string; status: string }[]>()
+      for (const doc of allDocs) {
+        const data = fieldsToObject<{ buyerAddress?: string; status?: string }>(doc.fields as Record<string, unknown>)
+        if (!data.buyerAddress) continue
+        const list = addressToInvoices.get(data.buyerAddress) || []
+        list.push({ name: doc.name, status: data.status || '' })
+        addressToInvoices.set(data.buyerAddress, list)
       }
 
-      const addresses = [...addressSet]
+      const addresses = [...addressToInvoices.keys()]
 
       if (addresses.length === 0) {
         summary.offsetStatus = 'idle'
@@ -166,39 +162,96 @@ export async function GET(request: Request) {
 
             const amount = debt < YIELD_AMOUNT ? debt : YIELD_AMOUNT
 
-            const server = new Server(RPC_URL)
             const adminKeypair = Keypair.fromSecret(process.env.ADMIN_SECRET_KEY!)
-            const source = await server.getAccount(adminKeypair.publicKey())
 
-            const operation = new Contract(CONTRACT_ID).call(
-              'offset_debt',
-              nativeToScVal(address, { type: 'address' }),
-              nativeToScVal(amount, { type: 'i128' }),
-            )
+            let txSuccess = false
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                const server = new Server(RPC_URL)
+                const source = await server.getAccount(adminKeypair.publicKey())
 
-            const tx = new TransactionBuilder(source, {
-              fee: '100',
-              networkPassphrase: NETWORK_PASSPHRASE,
-            })
-              .addOperation(operation)
-              .setTimeout(30)
-              .build()
+                const operation = new Contract(CONTRACT_ID).call(
+                  'offset_debt',
+                  new Address(address).toScVal(),
+                  nativeToScVal(amount, { type: 'i128' }),
+                )
 
-            const sim = await server.simulateTransaction(tx)
-            if (!Api.isSimulationSuccess(sim)) {
-              const errMsg = 'error' in sim ? sim.error : 'Simulation failed'
-              throw new Error(errMsg)
+                const tx = new TransactionBuilder(source, {
+                  fee: '100',
+                  networkPassphrase: NETWORK_PASSPHRASE,
+                })
+                  .addOperation(operation)
+                  .setTimeout(30)
+                  .build()
+
+                const sim = await server.simulateTransaction(tx)
+                if (!Api.isSimulationSuccess(sim)) {
+                  const errMsg = 'error' in sim ? sim.error : 'Simulation failed'
+                  throw new Error(errMsg)
+                }
+
+                const prepared = await server.prepareTransaction(tx)
+                prepared.sign(adminKeypair)
+
+                const sendResult = await server.sendTransaction(prepared)
+
+                if (sendResult.status === 'ERROR') {
+                  const errMsg = sendResult.errorResult
+                    ? String(sendResult.errorResult.result().switch().name)
+                    : 'Transaction rejected'
+                  throw new Error(errMsg)
+                }
+
+                if (sendResult.status === 'TRY_AGAIN_LATER') {
+                  throw new Error('TRY_AGAIN_LATER')
+                }
+
+                if (sendResult.status === 'PENDING' || sendResult.status === 'DUPLICATE') {
+                  const pollResult = await server.pollTransaction(sendResult.hash, { attempts: 15 })
+                  if (pollResult.status === Api.GetTransactionStatus.FAILED) {
+                    throw new Error('Transaction failed on-chain')
+                  }
+                }
+
+                txSuccess = true
+                break
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err)
+                const isSeqErr = /bad_seq|tx_bad_seq|sequence/i.test(msg)
+                const isTryAgain = /try_again_later|timeout|network/i.test(msg)
+                if ((isSeqErr || isTryAgain) && attempt < 2) {
+                  await new Promise((r) => setTimeout(r, 1000))
+                  continue
+                }
+                throw err
+              }
             }
 
-            const prepared = await server.prepareTransaction(tx)
-            prepared.sign(adminKeypair)
+            if (txSuccess) {
+              offsetSucceeded++
 
-            const result = await server.sendTransaction(prepared)
-            if (result.status === 'PENDING' || result.status === 'DUPLICATE') {
-              await server.pollTransaction(result.hash, { attempts: 15 })
+              // Mark this address's paid invoices as settled
+              const invoices = addressToInvoices.get(address) || []
+              const paidNames = invoices.filter((i) => i.status === 'paid').map((i) => i.name)
+              if (paidNames.length > 0) {
+                try {
+                  const writes = paidNames.map((name) => ({
+                    update: {
+                      name,
+                      fields: { status: { stringValue: 'settled' } },
+                    },
+                    updateMask: { fieldPaths: ['status'] },
+                  }))
+                  await commit(writes)
+                  summary.settledInvoices = (summary.settledInvoices as number || 0) + paidNames.length
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : String(err)
+                  summary.settleError = summary.settleError
+                    ? `${summary.settleError}; ${msg}`
+                    : msg
+                }
+              }
             }
-
-            offsetSucceeded++
           } catch (err) {
             offsetFailed++
             offsetErrors.push({ address, error: err instanceof Error ? err.message : String(err) })
@@ -210,27 +263,12 @@ export async function GET(request: Request) {
         summary.offsetSucceeded = offsetSucceeded
         summary.offsetFailed = offsetFailed
         if (offsetErrors.length) summary.offsetErrors = offsetErrors
-
-        if (offsetSucceeded > 0) {
-          try {
-            const writes = paidNames.map((name) => ({
-              update: {
-                name,
-                fields: { status: { stringValue: 'settled' } },
-              },
-            }))
-            await commit(writes)
-            summary.settledInvoices = paidNames.length
-          } catch (err) {
-            summary.settleError = err instanceof Error ? err.message : String(err)
-          }
-        }
       }
     } catch (err) {
       summary.offsetError = err instanceof Error ? err.message : String(err)
     }
   } finally {
-    try { await releaseLock() } catch {}
+    await releaseLock()
   }
 
   return NextResponse.json(summary)
