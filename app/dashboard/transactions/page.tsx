@@ -28,7 +28,7 @@ export default function TransactionsPage() {
     )
   }
 
-  if (!isAuthenticated && authSettled) {
+  if (!isAuthenticated && !authLoading) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <div className="border border-line2 bg-panel p-3">
