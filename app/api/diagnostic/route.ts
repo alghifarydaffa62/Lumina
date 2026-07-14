@@ -71,16 +71,35 @@ export async function GET(request: Request) {
       report.firestore.lock = err instanceof Error ? err.message : String(err)
     }
 
-    // Invoice counts
+    // Invoice breakdown
     try {
       const allDocs = await runQuery('invoices', [])
       const counts: Record<string, number> = {}
+      const byAddress: Record<string, { count: number; statuses: string[]; sampleId: string }> = {}
       for (const d of allDocs) {
-        const data = fieldsToObject<{ status?: string }>(d.fields as Record<string, unknown>)
+        const data = fieldsToObject<{ status?: string; buyerAddress?: string; merchantAddress?: string }>(d.fields as Record<string, unknown>)
         const s = data.status || 'unknown'
         counts[s] = (counts[s] || 0) + 1
+
+        const addr = data.buyerAddress || `merchant:${data.merchantAddress || 'unknown'}`
+        if (!byAddress[addr]) byAddress[addr] = { count: 0, statuses: [], sampleId: d.name.split('/').pop() || '' }
+        byAddress[addr].count++
+        if (!byAddress[addr].statuses.includes(s)) byAddress[addr].statuses.push(s)
+
+        // Limit to 20 docs to avoid huge response
+        if (allDocs.length <= 20) {
+          const shortName = d.name.split('/').pop() || ''
+          if (!report.firestore.invoiceSamples) report.firestore.invoiceSamples = []
+          ;(report.firestore.invoiceSamples as any[]).push({
+            id: shortName,
+            status: s,
+            buyerAddress: data.buyerAddress || '(not set)',
+            merchantAddress: data.merchantAddress || '(not set)',
+          })
+        }
       }
       report.firestore.invoiceCounts = counts
+      report.firestore.invoiceByAddress = byAddress
     } catch (err) {
       report.firestore.invoiceCounts = err instanceof Error ? err.message : String(err)
     }
