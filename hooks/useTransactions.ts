@@ -30,7 +30,7 @@ function extractIndexUrl(msg: string): string | null {
 
 export function useTransactions() {
   const { account } = useWallet()
-  const { isAuthenticated, authLoading } = useFirebaseAuthContext()
+  const { isAuthenticated, authLoading, authError } = useFirebaseAuthContext()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,6 +47,11 @@ export function useTransactions() {
     setError(null)
     setIndexUrl(null)
 
+    console.log('[useTransactions] subscribing to Firestore', {
+      address: account.address,
+      isAuthenticated,
+    })
+
     const q = query(
       collection(db, 'invoices'),
       where('buyerAddress', '==', account.address),
@@ -56,6 +61,11 @@ export function useTransactions() {
     const unsub = onSnapshot(
       q,
       (snapshot) => {
+        console.log('[useTransactions] onSnapshot success', {
+          docCount: snapshot.size,
+          empty: snapshot.empty,
+          metadata: snapshot.metadata,
+        })
         const list: Transaction[] = []
         snapshot.forEach((d) => {
           const data = d.data()
@@ -70,20 +80,41 @@ export function useTransactions() {
             buyerAddress: data.buyerAddress,
           })
         })
+        console.log('[useTransactions] after filter', { listLength: list.length, list })
         setTransactions(list)
         setLoading(false)
         setError(null)
         setIndexUrl(null)
       },
       (err) => {
-        setError(err.message)
+        console.error('[useTransactions] onSnapshot error', {
+          code: err.code,
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+        })
+        setError(`${err.name}: ${err.message}`)
         setLoading(false)
         setIndexUrl(extractIndexUrl(err.message))
       },
     )
 
-    return () => unsub()
+    return () => {
+      console.log('[useTransactions] unsubscribing')
+      unsub()
+    }
   }, [account?.address, authLoading, isAuthenticated])
+
+  console.log('[useTransactions] render', {
+    ready,
+    loading,
+    error,
+    transactionsCount: transactions.length,
+    isAuthenticated,
+    authLoading,
+    authError,
+    address: account?.address,
+  })
 
   return {
     transactions: ready ? transactions : [],

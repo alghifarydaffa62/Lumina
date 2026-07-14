@@ -45,8 +45,9 @@ export default function TransactionList({ transactions, loading, error, indexUrl
 
   if (error) {
     return (
-      <div className="border border-line bg-panel p-4 text-sm text-ink-dim shadow-sm">
-        Failed to load transactions: {error}
+      <div className="border border-red-500/30 bg-red-500/5 p-4 text-sm shadow-sm">
+        <p className="font-mono text-[11px] tracking-widest2 uppercase text-red-400">Error</p>
+        <p className="mt-1 text-ink-dim break-all">{error}</p>
       </div>
     )
   }
